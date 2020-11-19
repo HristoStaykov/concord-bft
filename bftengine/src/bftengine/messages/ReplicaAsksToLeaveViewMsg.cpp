@@ -46,7 +46,7 @@ ReplicaAsksToLeaveViewMsg* ReplicaAsksToLeaveViewMsg::create(ReplicaId senderId,
   std::memcpy(position, spanContext.data().data(), spanContext.data().size());
   position += spanContext.data().size();
 
-  ViewsManager::sigManager_->sign(m->body(), sizeof(Header) + spanContext.data().size(), position, sigLen);
+  ViewsManager::sigManager_->sign(m->body(), sizeof(Header), position, sigLen);
 
   return m;
 }
@@ -57,7 +57,7 @@ void ReplicaAsksToLeaveViewMsg::validate(const ReplicasInfo& repInfo) const {
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": basic validations"));
 
   uint16_t sigLen = ViewsManager::sigManager_->getSigLength(idOfGeneratedReplica());
-  if (!ViewsManager::sigManager_->verifySig(idOfGeneratedReplica(), body(), totalSize, body() + totalSize, sigLen))
+  if (!ViewsManager::sigManager_->verifySig(idOfGeneratedReplica(), body(), sizeof(Header), body() + totalSize, sigLen))
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": verifySig"));
 }
 
