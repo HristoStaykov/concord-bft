@@ -32,6 +32,8 @@ ViewChangeMsg::ViewChangeMsg(ReplicaId srcReplicaId,
   b()->genReplicaId = srcReplicaId;
   b()->newView = newView;
   b()->lastStable = lastStableSeq;
+  b()->numberOfComplaints = 0;
+  b()->sizeOfAllComplaints = 0;
   b()->numberOfElements = 0;
   b()->locationAfterLast = 0;
   std::memcpy(body() + sizeof(Header), spanContext.data().data(), spanContext.data().size());
@@ -45,6 +47,7 @@ void ViewChangeMsg::setNewViewNumber(ViewNum newView) {
 void ViewChangeMsg::getMsgDigest(Digest& outDigest) const {
   uint32_t bodySize = b()->locationAfterLast;
   if (bodySize == 0) bodySize = sizeof(Header) + spanContextSize();
+  bodySize += b()->sizeOfAllComplaints;
   DigestUtil::compute(body(), bodySize, (char*)outDigest.content(), sizeof(Digest));
 }
 
@@ -59,6 +62,8 @@ void ViewChangeMsg::addElement(SeqNum seqNum,
   ConcordAssert(b()->numberOfElements > 0 || b()->locationAfterLast == 0);
   ConcordAssert(seqNum > b()->lastStable);
   ConcordAssert(seqNum <= b()->lastStable + kWorkWindowSize);
+  ConcordAssert(b()->numberOfComplaints == 0);   //
+  ConcordAssert(b()->sizeOfAllComplaints == 0);  //
 
   if (b()->locationAfterLast == 0)  // if this is the first element
   {
@@ -93,14 +98,38 @@ void ViewChangeMsg::addElement(SeqNum seqNum,
   b()->numberOfElements++;
 }
 
+void ViewChangeMsg::addComplaint(const ReplicaAsksToLeaveViewMsg* const complaint) {
+  size_t bodySize = b()->locationAfterLast;
+  if (bodySize == 0) bodySize = sizeof(Header) + spanContextSize();
+  uint16_t sigSize = ViewsManager::sigManager_->getMySigLength();
+  bodySize += sigSize + b()->sizeOfAllComplaints;
+
+  auto sizeOfComplaint = complaint->size();
+
+  ConcordAssertLE((size_t)bodySize + sizeof(sizeOfComplaint) + (size_t)sizeOfComplaint, (size_t)internalStorageSize());
+
+  memcpy(body() + bodySize, &sizeOfComplaint, sizeof(sizeOfComplaint));
+  memcpy(body() + bodySize + sizeof(sizeOfComplaint), complaint->body(), complaint->size());
+
+  b()->sizeOfAllComplaints += sizeof(sizeOfComplaint) + complaint->size();
+  b()->numberOfComplaints++;
+}
+
 void ViewChangeMsg::finalizeMessage() {
   size_t bodySize = b()->locationAfterLast;
   if (bodySize == 0) bodySize = sizeof(Header) + spanContextSize();
 
   uint16_t sigSize = ViewsManager::sigManager_->getMySigLength();
 
-  setMsgSize(bodySize + sigSize);
+  setMsgSize(bodySize + sigSize + b()->sizeOfAllComplaints);
   shrinkToFit();
+
+  // We only sign the part that is concerned with View Change safety,
+  // the complaints carry signatures from the issuers.
+  // Visual representation:
+  // +------------+----------------+-------------------------------+------------------+
+  // |VCMsg header|List of Elements|Signature for previous 2 fields|List Of Complaints|
+  // +------------+----------------+-------------------------------+------------------+
 
   ViewsManager::sigManager_->sign(body(), bodySize, body() + bodySize, sigSize);
 
