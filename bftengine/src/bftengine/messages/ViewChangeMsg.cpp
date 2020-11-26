@@ -133,7 +133,7 @@ void ViewChangeMsg::finalizeMessage() {
 
   ViewsManager::sigManager_->sign(body(), bodySize, body() + bodySize, sigSize);
 
-  bool b = checkElements((uint16_t)sigSize);
+  bool b = checkElements((uint16_t)sigSize) && checkComplaints((uint16_t)sigSize);
 
   ConcordAssert(b);
 }
@@ -152,6 +152,8 @@ void ViewChangeMsg::validate(const ReplicasInfo& repInfo) const {
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": verifySig"));
   if (!checkElements(sigLen))  // check elements in message
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": check elements in message"));
+  if (!checkComplaints(sigLen))  // check list of complaints
+    throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": check complaints in message"));
 }
 
 bool ViewChangeMsg::checkElements(uint16_t sigSize) const {
@@ -203,6 +205,32 @@ bool ViewChangeMsg::checkElements(uint16_t sigSize) const {
   } else {
     if (this->b()->locationAfterLast != 0) return false;
   }
+
+  return true;
+}
+
+bool ViewChangeMsg::checkComplaints(uint16_t sigSize) const {
+  uint16_t numOfActualComplaints = 0;
+  uint32_t remainingBytes = size() - sigSize - b()->locationAfterLast;
+  char* currLoc = body() + b()->locationAfterLast + sigSize;
+
+  while (remainingBytes > sizeof(MessageBase::Header) && (numOfActualComplaints < numberOfComplaints())) {
+    MsgSize* complaintSize = (MsgSize*)currLoc;
+    remainingBytes -= sizeof(MsgSize);
+    currLoc += sizeof(MsgSize);
+
+    if (*complaintSize <= sizeof(MessageBase::Header)) {
+      return false;
+    }
+
+    numOfActualComplaints++;
+    remainingBytes -= *complaintSize;
+    currLoc += *complaintSize;
+  }
+
+  if (numOfActualComplaints != numberOfComplaints()) return false;
+
+  if (remainingBytes > 0) return false;
 
   return true;
 }

@@ -126,6 +126,8 @@ class ViewChangeMsg : public MessageBase {
   Header* b() const { return ((Header*)msgBody_); }
 
   bool checkElements(uint16_t sigSize) const;
+
+  bool checkComplaints(uint16_t sigSize) const;
 };
 
 template <>
