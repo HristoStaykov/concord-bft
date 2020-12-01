@@ -102,6 +102,26 @@ class ViewChangeMsg : public MessageBase {
     uint16_t nextElementNum;  // used for debug
   };
 
+  class ComplaintsIterator {
+   public:
+    // this ctor assumes that m is a legal ViewChangeMsg message (as defined by checkComplaints() )
+    ComplaintsIterator(const ViewChangeMsg* const m);
+
+    bool getCurrent(char*& pComplaint, uint32_t& size);
+
+    bool end();
+
+    void gotoNext();
+
+    bool getAndGoToNext(char*& pComplaint, uint32_t& size);
+
+   protected:
+    const ViewChangeMsg* const msg;
+    uint32_t endLoc;
+    uint32_t currLoc;
+    uint16_t nextElementNum;  // used for debug
+  };
+
  protected:
   template <typename MessageT>
   friend size_t sizeOfHeader();
@@ -121,7 +141,7 @@ class ViewChangeMsg : public MessageBase {
                                  // followed by quorum of complaints from different Replicas
   };
 #pragma pack(pop)
-  static_assert(sizeof(Header) == (6 + 2 + 8 + 8 + 2 + 4 + 2 + 4), "Header is 30B");
+  static_assert(sizeof(Header) == (6 + 2 + 8 + 8 + 2 + 4 + 2 + 4), "Header is 36B");
 
   Header* b() const { return ((Header*)msgBody_); }
 

@@ -326,5 +326,15 @@ bool ViewChangeMsg::ElementsIterator::goToAtLeast(SeqNum lowerBound) {
   return validElement;
 }
 
+ViewChangeMsg::ComplaintsIterator::ComplaintsIterator(const ViewChangeMsg* const m) : msg{m} {}
+
+bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& size) { return true; }
+
+bool ViewChangeMsg::ComplaintsIterator::end() { return true; }
+
+void ViewChangeMsg::ComplaintsIterator::gotoNext() {}
+
+bool ViewChangeMsg::ComplaintsIterator::getAndGoToNext(char*& pComplaint, uint32_t& size) { return true; }
+
 }  // namespace impl
 }  // namespace bftEngine
