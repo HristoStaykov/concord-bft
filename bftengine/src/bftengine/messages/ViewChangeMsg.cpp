@@ -230,7 +230,7 @@ bool ViewChangeMsg::checkComplaints(uint16_t sigSize) const {
 
   if (numOfActualComplaints != numberOfComplaints()) return false;
 
-  if (remainingBytes > 0) return false;
+  if (remainingBytes != 0) return false;
 
   return true;
 }
