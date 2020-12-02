@@ -119,7 +119,7 @@ class ViewChangeMsg : public MessageBase {
     const ViewChangeMsg* const msg;
     uint32_t endLoc;
     uint32_t currLoc;
-    uint16_t nextElementNum;  // used for debug
+    uint16_t nextComplaintNum;  // used for debug
   };
 
  protected:

@@ -99,6 +99,7 @@ void ViewChangeMsg::addElement(SeqNum seqNum,
 }
 
 void ViewChangeMsg::addComplaint(const ReplicaAsksToLeaveViewMsg* const complaint) {
+  ConcordAssert(b()->numberOfComplaints > 0 || b()->sizeOfAllComplaints == 0);
   size_t bodySize = b()->locationAfterLast;
   if (bodySize == 0) bodySize = sizeof(Header) + spanContextSize();
   uint16_t sigSize = ViewsManager::sigManager_->getMySigLength();
@@ -326,15 +327,61 @@ bool ViewChangeMsg::ElementsIterator::goToAtLeast(SeqNum lowerBound) {
   return validElement;
 }
 
-ViewChangeMsg::ComplaintsIterator::ComplaintsIterator(const ViewChangeMsg* const m) : msg{m} {}
+ViewChangeMsg::ComplaintsIterator::ComplaintsIterator(const ViewChangeMsg* const m) : msg{m} {
+  if (m == nullptr || m->numberOfComplaints() == 0) {
+    endLoc = 0;
+    currLoc = 0;
+    nextComplaintNum = 1;
+  } else {
+    endLoc = m->size();
+    currLoc = m->b()->locationAfterLast + ViewsManager::sigManager_->getMySigLength();
+    ConcordAssert(endLoc > currLoc);
+    nextComplaintNum = 1;
+  }
+}
 
-bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& size) { return true; }
+bool ViewChangeMsg::ComplaintsIterator::end() {
+  if (currLoc >= endLoc) {
+    ConcordAssert(msg == nullptr || ((nextComplaintNum - 1) == msg->numberOfComplaints()));
+    return true;
+  }
 
-bool ViewChangeMsg::ComplaintsIterator::end() { return true; }
+  return false;
+}
 
-void ViewChangeMsg::ComplaintsIterator::gotoNext() {}
+bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& size) {
+  if (end()) return false;
 
-bool ViewChangeMsg::ComplaintsIterator::getAndGoToNext(char*& pComplaint, uint32_t& size) { return true; }
+  size = *(MsgSize*)(msg->b() + currLoc);
+
+  const uint32_t remainingbytes = (endLoc - currLoc) - sizeof(MsgSize);
+
+  ConcordAssert(remainingbytes >= size);  // Validate method must make sure we never accept such message
+
+  pComplaint = (char*)malloc(size);
+
+  memcpy(pComplaint, msg->b() + currLoc + sizeof(MsgSize), size);
+
+  return true;
+}
+
+void ViewChangeMsg::ComplaintsIterator::gotoNext() {
+  if (end()) return;
+
+  const uint32_t size = *(MsgSize*)(msg->b() + currLoc);
+
+  const uint32_t remainingbytes = (endLoc - currLoc) - sizeof(MsgSize);
+
+  ConcordAssert(remainingbytes >= size);  // Validate method must make sure we never accept such message
+
+  currLoc += sizeof(MsgSize) + size;
+}
+
+bool ViewChangeMsg::ComplaintsIterator::getAndGoToNext(char*& pComplaint, uint32_t& size) {
+  bool retVal = getCurrent(pComplaint, size);
+  gotoNext();
+  return retVal;
+}
 
 }  // namespace impl
 }  // namespace bftEngine
