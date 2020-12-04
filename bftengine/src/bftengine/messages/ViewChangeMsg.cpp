@@ -349,10 +349,10 @@ bool ViewChangeMsg::ComplaintsIterator::end() {
   return false;
 }
 
-bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& size) {
+bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, MsgSize& size) {
   if (end()) return false;
 
-  size = *(MsgSize*)(msg->b() + currLoc);
+  size = *(MsgSize*)(msg->body() + currLoc);
 
   const uint32_t remainingbytes = (endLoc - currLoc) - sizeof(MsgSize);
 
@@ -360,7 +360,7 @@ bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& 
 
   pComplaint = (char*)malloc(size);
 
-  memcpy(pComplaint, msg->b() + currLoc + sizeof(MsgSize), size);
+  memcpy(pComplaint, msg->body() + currLoc + sizeof(MsgSize), size);
 
   return true;
 }
@@ -368,16 +368,18 @@ bool ViewChangeMsg::ComplaintsIterator::getCurrent(char*& pComplaint, uint32_t& 
 void ViewChangeMsg::ComplaintsIterator::gotoNext() {
   if (end()) return;
 
-  const uint32_t size = *(MsgSize*)(msg->b() + currLoc);
+  const uint32_t size = *(MsgSize*)(msg->body() + currLoc);
 
   const uint32_t remainingbytes = (endLoc - currLoc) - sizeof(MsgSize);
 
   ConcordAssert(remainingbytes >= size);  // Validate method must make sure we never accept such message
 
   currLoc += sizeof(MsgSize) + size;
+
+  nextComplaintNum++;
 }
 
-bool ViewChangeMsg::ComplaintsIterator::getAndGoToNext(char*& pComplaint, uint32_t& size) {
+bool ViewChangeMsg::ComplaintsIterator::getAndGoToNext(char*& pComplaint, MsgSize& size) {
   bool retVal = getCurrent(pComplaint, size);
   gotoNext();
   return retVal;

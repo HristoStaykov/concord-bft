@@ -107,13 +107,13 @@ class ViewChangeMsg : public MessageBase {
     // this ctor assumes that m is a legal ViewChangeMsg message (as defined by checkComplaints() )
     ComplaintsIterator(const ViewChangeMsg* const m);
 
-    bool getCurrent(char*& pComplaint, uint32_t& size);
+    bool getCurrent(char*& pComplaint, MsgSize& size);
 
     bool end();
 
     void gotoNext();
 
-    bool getAndGoToNext(char*& pComplaint, uint32_t& size);
+    bool getAndGoToNext(char*& pComplaint, MsgSize& size);
 
    protected:
     const ViewChangeMsg* const msg;

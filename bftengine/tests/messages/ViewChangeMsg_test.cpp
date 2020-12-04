@@ -72,7 +72,8 @@ TEST(ViewChangeMsg, base_methods) {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   uint32_t totalSizeOfComplaints = 0;
-  for (ReplicaId sender = 1; sender < 3; sender++) {
+  uint32_t numberOfComplaints = 0;
+  for (ReplicaId sender = 1; sender < 4; sender++) {
     std::unique_ptr<ReplicaAsksToLeaveViewMsg> msg_complaint(
         ReplicaAsksToLeaveViewMsg::create(sender,
                                           viewNum,
@@ -90,14 +91,30 @@ TEST(ViewChangeMsg, base_methods) {
 
     totalSizeOfComplaints += sizeof(decltype(msg_complaint->size()));
     totalSizeOfComplaints += msg_complaint->size();
+    numberOfComplaints++;
   }
-  EXPECT_EQ(msg.numberOfComplaints(), 2);
+  EXPECT_EQ(msg.numberOfComplaints(), numberOfComplaints);
   EXPECT_EQ(msg.sizeOfAllComplaints(), totalSizeOfComplaints);
   /////////////////////////////////////////////////////////////////////////////////////////////////////
 
   msg.finalizeMessage();
   EXPECT_EQ(msg.numberOfElements(), 2);
   EXPECT_NO_THROW(msg.validate(replicaInfo));
+
+  {
+    uint32_t packedComplaints = 0;
+    ViewChangeMsg::ComplaintsIterator iter(&msg);
+    char* complaint = nullptr;
+    MsgSize size = 0;
+    while (iter.getAndGoToNext(complaint, size)) {
+      auto Msg = MessageBase(msg.senderId(), (MessageBase::Header*)complaint, size, false);
+      auto msg_complaint = std::make_unique<ReplicaAsksToLeaveViewMsg>(&Msg);
+      EXPECT_NO_THROW(msg_complaint->validate(replicaInfo));
+      packedComplaints++;
+    }
+    EXPECT_EQ(packedComplaints, numberOfComplaints);
+  }
+
   testMessageBaseMethods(msg, MsgCode::ViewChange, senderId, spanContext);
 
   {
