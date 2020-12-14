@@ -2158,7 +2158,7 @@ void ReplicaImp::onMessage<ViewChangeMsg>(ViewChangeMsg *msg) {
             ((ReplicaAsksToLeaveViewMsg *)complaintMsg)->idOfGeneratedReplica()) == nullptr) {
       messageHandler<ReplicaAsksToLeaveViewMsg>(complaintMsg);
     } else {
-      delete msg;
+      delete complaintMsg;
     }
   }
   LOG_INFO(GL, "DEBUG END" << KVLOG(msg->senderId()));
@@ -2239,6 +2239,12 @@ void ReplicaImp::MoveToHigherView(ViewNum nextView) {
     ConcordAssertNE(pVC, nullptr);
     pVC->setNewViewNumber(nextView);
     time_in_active_view_.end();
+    if (pVC->clearAllComplaints()) {
+      for (const auto &i : complainedReplicas.getAllMsgs()) {
+        pVC->addComplaint(i.second.get());
+      }
+      complainedReplicas.clear();
+    }
   } else {
     std::vector<ViewsManager::PrevViewInfo> prevViewInfo;
     for (SeqNum i = lastStableSeqNum + 1; i <= lastStableSeqNum + kWorkWindowSize; i++) {
