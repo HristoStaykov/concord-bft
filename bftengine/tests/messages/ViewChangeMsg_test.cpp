@@ -224,7 +224,9 @@ TEST(ViewChangeMsg, add_remove_complaints) {
                                         std::string(certificate1, DIGEST_SIZE)));
     msg.addElement(seqNum1, digest1, viewNum1, true, originalViewNum1, sizeof(certificate1), certificate1);
   }
+  msg.setNewViewNumber(++viewNum);
   EXPECT_EQ(msg.numberOfElements(), totalElements);
+
   auto checkElements = [&msg, &inputData]() {
     ViewChangeMsg::ElementsIterator iter(&msg);
     for (size_t i = 0; !iter.end(); ++i) {
@@ -275,8 +277,11 @@ TEST(ViewChangeMsg, add_remove_complaints) {
       numberOfComplaints++;
     }
 
+    msg.finalizeMessage();
     EXPECT_EQ(msg.numberOfComplaints(), numberOfComplaints);
     EXPECT_EQ(msg.sizeOfAllComplaints(), totalSizeOfComplaints);
+    EXPECT_EQ(msg.numberOfElements(), totalElements);
+    EXPECT_NO_THROW(msg.validate(replicaInfo));
 
     checkElements();
     msg.clearAllComplaints();
