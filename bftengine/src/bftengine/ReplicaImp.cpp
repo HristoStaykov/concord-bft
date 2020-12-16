@@ -2147,21 +2147,20 @@ void ReplicaImp::onMessage<ViewChangeMsg>(ViewChangeMsg *msg) {
   ViewChangeMsg::ComplaintsIterator iter(msg);
   char *complaint = nullptr;
   MsgSize size = 0;
-  LOG_INFO(GL, "DEBUG BEGIN" << KVLOG(msg->senderId()));
+
   while (iter.getAndGoToNext(complaint, size)) {
-    auto *complaintMsg = new MessageBase(msg->senderId(), (MessageBase::Header *)complaint, size, true);
+    auto baseMsg = MessageBase(msg->senderId(), (MessageBase::Header *)complaint, size, true);
+    auto *complaintMsg = new ReplicaAsksToLeaveViewMsg(&baseMsg);
     LOG_INFO(GL,
-             "DEBUG got complaint from " << KVLOG(complaintMsg->senderId(),
-                                                  ((ReplicaAsksToLeaveViewMsg *)complaintMsg)->idOfGeneratedReplica()));
-    if (msg->newView() == curView + 1 &&
-        complainedReplicas.getComplaintFromReplica(
-            ((ReplicaAsksToLeaveViewMsg *)complaintMsg)->idOfGeneratedReplica()) == nullptr) {
-      messageHandler<ReplicaAsksToLeaveViewMsg>(complaintMsg);
+             "Got complaint in ViewChangeMsg from "
+                 << KVLOG(msg->senderId(), complaintMsg->senderId(), complaintMsg->idOfGeneratedReplica()));
+    if (validateMessage(complaintMsg) && msg->newView() == curView + 1 &&
+        complainedReplicas.getComplaintFromReplica(complaintMsg->idOfGeneratedReplica()) == nullptr) {
+      onMessage<ReplicaAsksToLeaveViewMsg>(complaintMsg);
     } else {
       delete complaintMsg;
     }
   }
-  LOG_INFO(GL, "DEBUG END" << KVLOG(msg->senderId()));
 
   // if the current primary wants to leave view
   if (generatedReplicaId == currentPrimary() && msg->newView() > curView) {
@@ -2239,12 +2238,7 @@ void ReplicaImp::MoveToHigherView(ViewNum nextView) {
     ConcordAssertNE(pVC, nullptr);
     pVC->setNewViewNumber(nextView);
     time_in_active_view_.end();
-    if (pVC->clearAllComplaints()) {
-      for (const auto &i : complainedReplicas.getAllMsgs()) {
-        pVC->addComplaint(i.second.get());
-      }
-      complainedReplicas.clear();
-    }
+    pVC->clearAllComplaints();
   } else {
     std::vector<ViewsManager::PrevViewInfo> prevViewInfo;
     for (SeqNum i = lastStableSeqNum + 1; i <= lastStableSeqNum + kWorkWindowSize; i++) {
@@ -2282,14 +2276,14 @@ void ReplicaImp::MoveToHigherView(ViewNum nextView) {
 
     pVC = viewsManager->exitFromCurrentView(lastStableSeqNum, lastExecutedSeqNum, prevViewInfo);
 
-    for (const auto &i : complainedReplicas.getAllMsgs()) {
-      pVC->addComplaint(i.second.get());
-    }
-    complainedReplicas.clear();
-
     ConcordAssertNE(pVC, nullptr);
     pVC->setNewViewNumber(nextView);
   }
+
+  for (const auto &i : complainedReplicas.getAllMsgs()) {
+    pVC->addComplaint(i.second.get());
+  }
+  complainedReplicas.clear();
 
   curView = nextView;
   metric_view_.Get().Set(nextView);
@@ -3018,6 +3012,8 @@ void ReplicaImp::onViewsChangeTimer(Timers::Handle timer)  // TODO(GG): review/u
           config_.getreplicaId(), curView, ReplicaAsksToLeaveViewMsg::Reason::PrimaryGetInChargeTimeout));
       sendToAllOtherReplicas(askToLeaveView.get());
       complainedReplicas.store(std::move(askToLeaveView));
+      metric_sent_replica_asks_to_leave_view_msg_.Get().Inc();
+
       tryToGotoNextView();
       return;
     }

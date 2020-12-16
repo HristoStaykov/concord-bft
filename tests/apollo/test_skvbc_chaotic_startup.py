@@ -83,21 +83,23 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
             current_block = skvbc.parse_reply(
                 await client.read(skvbc.get_last_block_req()))
 
-            with trio.move_on_after(seconds=60):
-                while True:
-                    # Make sure the current view is stable
-                    await bft_network.wait_for_view(
-                        replica_id=0,
-                        expected=lambda v: v == current_view,
-                        err_msg="Make sure view is stable after all replicas are started."
-                    )
-                    await trio.sleep(seconds=5)
+            await trio.sleep(seconds=10)
 
-                    # Make sure the system is processing requests
-                    last_block = skvbc.parse_reply(
-                        await client.read(skvbc.get_last_block_req()))
-                    self.assertTrue(last_block > current_block)
-                    current_block = last_block
+            # Make sure the current view is stable
+            await bft_network.wait_for_view(
+                replica_id=0,
+                expected=lambda v: v == current_view,
+                err_msg="Make sure view is stable after all replicas are started."
+            )
+
+            num_fast_req = 10
+
+            async def write_req():
+                for _ in range(num_fast_req):
+                    await skvbc.write_known_kv()
+
+            await bft_network.wait_for_fast_path_to_be_prevalent(
+                run_ops=lambda: write_req(), threshold=num_fast_req)
 
             current_primary = current_view % bft_network.config.n
             non_primaries = bft_network.all_replicas(without={current_primary})
