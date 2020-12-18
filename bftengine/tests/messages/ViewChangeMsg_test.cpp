@@ -169,24 +169,7 @@ void ViewChangeMsgTests(bool bAddElements, bool bAddComplaints, const std::strin
   }
 }
 
-TEST(ViewChangeMsg, base_methods_no_span) { ViewChangeMsgTests(false, false); }
-
-TEST(ViewChangeMsg, add_elements_no_span) { ViewChangeMsgTests(true, false); }
-
-TEST(ViewChangeMsg, add_complaints_no_span) { ViewChangeMsgTests(false, true); }
-
-TEST(ViewChangeMsg, add_elements_and_complaints_no_span) { ViewChangeMsgTests(true, true); }
-
-TEST(ViewChangeMsg, base_methods_with_span) { ViewChangeMsgTests(false, false, rawSpanContext); }
-
-TEST(ViewChangeMsg, add_elements_with_span) { ViewChangeMsgTests(true, false, rawSpanContext); }
-
-TEST(ViewChangeMsg, add_complaints_with_span) { ViewChangeMsgTests(false, true, rawSpanContext); }
-
-TEST(ViewChangeMsg, add_elements_and_complaints_with_span) { ViewChangeMsgTests(true, true, rawSpanContext); }
-
-TEST(ViewChangeMsg, add_remove_complaints) {
-  auto spanContext = "12345";
+void ViewChangeMsgAddRemoveComplaints(const std::string& spanContext = "", int totalElements = 0) {
   ReplicaId senderId = 1u;
   ViewNum viewNum = 2u;
   SeqNum seqNum = 3u;
@@ -205,7 +188,6 @@ TEST(ViewChangeMsg, add_remove_complaints) {
 
   typedef std::tuple<SeqNum, Digest, ViewNum, bool, ViewNum, size_t, std::string> InputTuple;
   std::vector<InputTuple> inputData;
-  const int totalElements = 5;
   for (int i = 0; i < totalElements; i++) {
     Digest digest1(i);
     auto originalViewNum1 = viewNum;
@@ -291,6 +273,32 @@ TEST(ViewChangeMsg, add_remove_complaints) {
     checkElements();
   }
 }
+
+TEST(ViewChangeMsg, base_methods_no_span) { ViewChangeMsgTests(false, false); }
+
+TEST(ViewChangeMsg, add_elements_no_span) { ViewChangeMsgTests(true, false); }
+
+TEST(ViewChangeMsg, add_complaints_no_span) { ViewChangeMsgTests(false, true); }
+
+TEST(ViewChangeMsg, add_elements_and_complaints_no_span) { ViewChangeMsgTests(true, true); }
+
+TEST(ViewChangeMsg, base_methods_with_span) { ViewChangeMsgTests(false, false, rawSpanContext); }
+
+TEST(ViewChangeMsg, add_elements_with_span) { ViewChangeMsgTests(true, false, rawSpanContext); }
+
+TEST(ViewChangeMsg, add_complaints_with_span) { ViewChangeMsgTests(false, true, rawSpanContext); }
+
+TEST(ViewChangeMsg, add_elements_and_complaints_with_span) { ViewChangeMsgTests(true, true, rawSpanContext); }
+
+TEST(ViewChangeMsg, add_remove_complaints_with_span_with_elements) {
+  ViewChangeMsgAddRemoveComplaints(rawSpanContext, 5);
+}
+
+TEST(ViewChangeMsg, add_remove_complaints_with_span_no_elements) { ViewChangeMsgAddRemoveComplaints(rawSpanContext); }
+
+TEST(ViewChangeMsg, add_remove_complaints_no_span_with_elements) { ViewChangeMsgAddRemoveComplaints("", 7); }
+
+TEST(ViewChangeMsg, add_remove_complaints_no_span_no_elements) { ViewChangeMsgAddRemoveComplaints(); }
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
