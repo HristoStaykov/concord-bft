@@ -199,11 +199,8 @@ TEST(ViewChangeMsg, add_remove_complaints) {
   ViewChangeMsg msg(senderId, viewNum, seqNum, concordUtils::SpanContext{spanContext});
   EXPECT_EQ(msg.idOfGeneratedReplica(), senderId);
   EXPECT_EQ(msg.newView(), viewNum);
-  EXPECT_EQ(msg.lastStable(), seqNum);
-  EXPECT_EQ(msg.numberOfElements(), 0u);
-  viewNum++;
-  msg.setNewViewNumber(viewNum);
-  EXPECT_EQ(msg.newView(), viewNum);
+  auto lastStable = seqNum;
+  EXPECT_EQ(msg.lastStable(), lastStable);
   testMessageBaseMethods(msg, MsgCode::ViewChange, senderId, spanContext);
 
   typedef std::tuple<SeqNum, Digest, ViewNum, bool, ViewNum, size_t, std::string> InputTuple;
@@ -278,10 +275,16 @@ TEST(ViewChangeMsg, add_remove_complaints) {
     }
 
     msg.finalizeMessage();
+
+    EXPECT_EQ(msg.idOfGeneratedReplica(), senderId);
+    EXPECT_EQ(msg.newView(), viewNum);
+    EXPECT_EQ(msg.lastStable(), lastStable);
+    EXPECT_EQ(msg.numberOfElements(), totalElements);
     EXPECT_EQ(msg.numberOfComplaints(), numberOfComplaints);
     EXPECT_EQ(msg.sizeOfAllComplaints(), totalSizeOfComplaints);
     EXPECT_EQ(msg.numberOfElements(), totalElements);
     EXPECT_NO_THROW(msg.validate(replicaInfo));
+    testMessageBaseMethods(msg, MsgCode::ViewChange, senderId, spanContext);
 
     checkElements();
     msg.clearAllComplaints();
