@@ -419,6 +419,7 @@ class SkvbcViewChangeTest(unittest.TestCase):
         isolated_node = random.choice(
             bft_network.all_replicas(without={initial_primary}))
         isolated_replicas = set([isolated_node])
+        print(f"isolated_replicas = {isolated_replicas}")
 
         ask_to_leave_msg_count = await bft_network.get_metric(
             isolated_node, bft_network, "Gauges", "sentReplicaAsksToLeaveViewMsg")
@@ -454,6 +455,14 @@ class SkvbcViewChangeTest(unittest.TestCase):
         current_primary = await bft_network.get_current_primary()
         self.assertEqual(initial_primary, current_primary,
                          "Make sure we are still on the initial view.")
+
+        print("going to stop isolated replica")
+        await trio.sleep(seconds=50)
+        bft_network.stop_replica(isolated_node)
+        await trio.sleep(seconds=5)
+        bft_network.start_replica(isolated_node)
+        await self._wait_for_replica_to_ask_to_leave_view_due_to_status(
+            bft_network=bft_network, node=isolated_node)
 
     async def _single_vc_with_consecutive_failed_replicas(
             self,
