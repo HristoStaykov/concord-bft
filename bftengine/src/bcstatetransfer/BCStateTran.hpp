@@ -45,7 +45,9 @@ using std::map;
 using std::string;
 using concordMetrics::StatusHandle;
 using concordMetrics::GaugeHandle;
+using concordMetrics::AtomicGaugeHandle;
 using concordMetrics::CounterHandle;
+using concordMetrics::AtomicCounterHandle;
 using concord::util::Throughput;
 
 namespace bftEngine::bcst::impl {
@@ -361,14 +363,14 @@ class BCStateTran : public IStateTransfer {
 
     GaugeHandle current_source_replica_;
     GaugeHandle checkpoint_being_fetched_;
-    GaugeHandle last_stored_checkpoint_;
+    AtomicGaugeHandle last_stored_checkpoint_;
     GaugeHandle number_of_reserved_pages_;
     GaugeHandle size_of_reserved_page_;
     GaugeHandle last_msg_seq_num_;
     GaugeHandle next_required_block_;
     GaugeHandle num_pending_item_data_msgs_;
     GaugeHandle total_size_of_pending_item_data_msgs_;
-    GaugeHandle last_block_;
+    AtomicGaugeHandle last_block_;
     GaugeHandle last_reachable_block_;
 
     CounterHandle sent_ask_for_checkpoint_summaries_msg_;
@@ -400,12 +402,12 @@ class BCStateTran : public IStateTransfer {
     CounterHandle invalid_item_data_msg_;
     CounterHandle irrelevant_item_data_msg_;
 
-    CounterHandle create_checkpoint_;
+    AtomicCounterHandle create_checkpoint_;
     CounterHandle mark_checkpoint_as_stable_;
-    CounterHandle load_reserved_page_;
-    CounterHandle load_reserved_page_from_pending_;
-    CounterHandle load_reserved_page_from_checkpoint_;
-    CounterHandle save_reserved_page_;
+    AtomicCounterHandle load_reserved_page_;
+    AtomicCounterHandle load_reserved_page_from_pending_;
+    AtomicCounterHandle load_reserved_page_from_checkpoint_;
+    AtomicCounterHandle save_reserved_page_;
     CounterHandle zero_reserved_page_;
     CounterHandle start_collecting_state_;
     CounterHandle on_timer_;
