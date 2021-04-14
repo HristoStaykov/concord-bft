@@ -172,6 +172,61 @@ class SkvbcViewChangeTest(unittest.TestCase):
         await tracker.run_concurrent_ops(10)
 
     @with_trio
+    @with_bft_network(start_replica_cmd, selected_configs=lambda n, f, c: c == 0, rotate_keys=True)
+    @verify_linearizability()
+    async def test_recovering_of_replicas_with_initiated_view_change(self, bft_network, tracker):
+        """
+        The goal of this test is to validate recovery to fast path after stopping all replicas during view change.
+        Test is valid only when c = 0.
+        To trigger view change we start N - (F+1) replicas. This causes fast view change because 3f+2*0+1-f-1=2f
+        1) Given a BFT network start N - (F+1) replicas.
+        2) Send some requests to trigger view change from replicas
+        4) Wait for view change to be initiated
+        5) Stop all previously running replicas
+        6) Start all of the replicas N
+        7) Wait for fast path to be prevalent
+        """
+
+        replicas_to_start = bft_network.config.n - (bft_network.config.f + 1)
+        replicas = random.sample(bft_network.all_replicas(), replicas_to_start)
+
+        # start replicas
+        for i in replicas:
+            bft_network.start_replica(i)
+
+        # write to trigger vc
+        await tracker.run_concurrent_ops(10)
+
+        # wait for replicas to go to higher view
+        with trio.fail_after(seconds=60):
+            for i in replicas:
+                replica_view = 0
+                while True:
+                    replica_view = await bft_network.get_metric(i, bft_network, "Gauges", "view")
+                    if replica_view > 0:
+                        break
+
+                self.assertTrue(replica_view == 1, "Replica " + str(i) + " expected view 1 " +
+                                "but is in view " + str(replica_view))
+
+
+        # stop replicas
+        for i in replicas:
+            bft_network.stop_replica(i)
+
+        bft_network.start_all_replicas()
+
+        for r in bft_network.all_replicas():
+            await bft_network.wait_for_view(
+                replica_id=r,
+                expected=lambda v: v == 1,
+                err_msg="Make sure view change has happened"
+            )
+
+        await bft_network.wait_for_fast_path_to_be_prevalent(
+            run_ops=lambda: tracker.run_concurrent_ops(num_ops=20, write_weight=1), threshold=20)
+
+    @with_trio
     @with_bft_network(start_replica_cmd, selected_configs=lambda n, f, c: f >= 2, rotate_keys=True)
     @verify_linearizability()
     async def test_crashed_replica_catch_up_after_view_change(self, bft_network, tracker):

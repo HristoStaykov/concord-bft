@@ -22,6 +22,8 @@ from util.bft import with_trio, with_bft_network, with_constant_load, KEY_FILE_P
 from util import bft_network_partitioning as net
 from util import eliot_logging as log
 
+from util import skvbc as kvbc
+
 def start_replica_cmd(builddir, replica_id, view_change_timeout_milli="10000"):
     """
     Return a command that starts an skvbc replica when passed to
@@ -47,6 +49,89 @@ def start_replica_cmd_with_vc_timeout(vc_timeout):
 class SkvbcChaoticStartupTest(unittest.TestCase):
 
     __test__ = False  # so that PyTest ignores this test scenario
+
+    @with_trio
+    @with_bft_network(start_replica_cmd, selected_configs=lambda n, f, c: n == 7)
+    async def bug_recreation(self, bft_network):
+
+        bft_network.start_all_replicas()
+        skvbc = kvbc.SimpleKVBCProtocol(bft_network)
+
+        num_reqs_before_first_stable = 149
+
+        async def write_req(num_req = 1):
+            for _ in range(num_req):
+                await skvbc.write_known_kv()
+
+        for v in range(0, num_reqs_before_first_stable):
+            await write_req()
+
+        while True:
+            last_exec_seqs = []
+            for replica_id in bft_network.all_replicas():
+                last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
+                lase_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {lase_exec}")
+                last_exec_seqs.append(lase_exec)
+            print("####################")
+            if last_exec_seqs.count(num_reqs_before_first_stable) == bft_network.config.n:
+                break
+            else:
+                last_exec_seqs.clear()
+
+        last_stable_seqs = []
+        replicas_to_keep_down = []
+        with net.ReplicaSubsetOneWayTwoSetsIsolatingAdversary(bft_network, {1, 2, 3}, {6, 5, 4}) as adversary:
+            adversary.interfere()
+            await write_req()
+
+            while True:
+                for replica_id in bft_network.all_replicas():
+                    last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
+                    lase_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                    print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {lase_exec}")
+                    last_stable_seqs.append(last_stable)
+                print("####################")
+                if last_stable_seqs.count(num_reqs_before_first_stable+1) >= 1:
+                    break
+                else:
+                    last_stable_seqs.clear()
+                    await trio.sleep(seconds=3)
+
+            for v in range(0, len(last_stable_seqs)):
+                if last_stable_seqs[v] == 0:
+                    replicas_to_keep_down.append(v)
+                    if len(replicas_to_keep_down) == bft_network.config.f:
+                        break
+
+            print(f"replicas_to_keep_down={replicas_to_keep_down}")
+
+            for r in replicas_to_keep_down:
+                bft_network.stop_replica(r)
+
+            if 0 not in replicas_to_keep_down:
+                print(f"stopping Replica 0")
+                bft_network.stop_replica(0)
+
+            with trio.move_on_after(seconds=3):
+                await write_req()
+
+            for r in {6, 5, 4}:
+                view_of_replica = 0
+                while view_of_replica == 0:
+                    view_of_replica = await self._get_gauge(r, bft_network, 'view')
+                    print(f"replica {r} is in view {view_of_replica}")
+                    await trio.sleep(seconds=3)
+
+        while True:
+            for replica_id in bft_network.get_live_replicas():
+                last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
+                lase_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {lase_exec}")
+            print("####################")
+            await trio.sleep(seconds=3)
+
+
 
     # @unittest.skipIf(environ.get('BUILD_COMM_TCP_TLS', "").lower() == "true", "Unstable on CI (TCP/TLS only)")
     @unittest.skip("Disabled due to BC-6816")
