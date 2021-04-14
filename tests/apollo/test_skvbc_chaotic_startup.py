@@ -52,19 +52,18 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
 
     @with_trio
     @with_bft_network(start_replica_cmd, selected_configs=lambda n, f, c: n == 7)
-    async def bug_recreation(self, bft_network):
+    async def bug_recreation_BC_7891(self, bft_network):
 
         bft_network.start_all_replicas()
         skvbc = kvbc.SimpleKVBCProtocol(bft_network)
 
         num_reqs_before_first_stable = 149
 
-        async def write_req(num_req = 1):
+        async def write_req(num_req=1):
             for _ in range(num_req):
                 await skvbc.write_known_kv()
 
-        for v in range(0, num_reqs_before_first_stable):
-            await write_req()
+        await write_req(num_reqs_before_first_stable)
 
         while True:
             last_exec_seqs = []
@@ -79,57 +78,49 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
             else:
                 last_exec_seqs.clear()
 
+        bft_network.stop_replica(1)
+        bft_network.stop_replica(2)
+
+        await write_req()
         last_stable_seqs = []
-        replicas_to_keep_down = []
-        with net.ReplicaSubsetOneWayTwoSetsIsolatingAdversary(bft_network, {1, 2, 3}, {6, 5, 4}) as adversary:
+        with net.ReplicaSubsetOneWayTwoSetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}) as adversary:
             adversary.interfere()
-            await write_req()
 
             while True:
-                for replica_id in bft_network.all_replicas():
+                for replica_id in bft_network.get_live_replicas():
                     last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
-                    lase_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
-                    print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {lase_exec}")
+                    last_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                    print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {last_exec}")
                     last_stable_seqs.append(last_stable)
                 print("####################")
-                if last_stable_seqs.count(num_reqs_before_first_stable+1) >= 1:
+                if last_stable_seqs.count(num_reqs_before_first_stable + 1) == 2 * bft_network.config.f:
                     break
                 else:
                     last_stable_seqs.clear()
+                    await write_req()
                     await trio.sleep(seconds=3)
 
-            for v in range(0, len(last_stable_seqs)):
-                if last_stable_seqs[v] == 0:
-                    replicas_to_keep_down.append(v)
-                    if len(replicas_to_keep_down) == bft_network.config.f:
-                        break
-
-            print(f"replicas_to_keep_down={replicas_to_keep_down}")
-
-            for r in replicas_to_keep_down:
-                bft_network.stop_replica(r)
-
-            if 0 not in replicas_to_keep_down:
-                print(f"stopping Replica 0")
-                bft_network.stop_replica(0)
-
-            with trio.move_on_after(seconds=3):
-                await write_req()
-
-            for r in {6, 5, 4}:
-                view_of_replica = 0
-                while view_of_replica == 0:
-                    view_of_replica = await self._get_gauge(r, bft_network, 'view')
-                    print(f"replica {r} is in view {view_of_replica}")
-                    await trio.sleep(seconds=3)
+        bft_network.stop_replica(0)
+        bft_network.stop_replica(6)
+        bft_network.start_replica(1)
+        bft_network.start_replica(2)
 
         while True:
             for replica_id in bft_network.get_live_replicas():
                 last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
-                lase_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
-                print(f"replica = {replica_id}; last_stable = {last_stable}; lase_exec = {lase_exec}")
+                last_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                view = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "view")
+                print(f"replica = {replica_id}; view={view}; last_stable = {last_stable}; lase_exec = {last_exec}")
+                last_stable_seqs.append(last_exec)
             print("####################")
-            await trio.sleep(seconds=3)
+            if last_stable_seqs.count(num_reqs_before_first_stable + 1) >= 2 * bft_network.config.f + 1:
+                break
+            else:
+                last_stable_seqs.clear()
+                with trio.move_on_after(seconds=3):
+                    await write_req()
+                await trio.sleep(seconds=3)
+
 
 
 
