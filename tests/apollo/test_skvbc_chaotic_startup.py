@@ -118,7 +118,8 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
         last_stable_seqs = []
 
         # step 4
-        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}, {6}, {3, 4, 5}) as adversary:
+        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}, {6}, {3, 4, 5},
+                                                           {4}, {3, 5, 6}) as adversary:
             adversary.interfere()
 
             while True:
@@ -129,7 +130,7 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
                                                    lase_exec = {last_exec}")
                     last_stable_seqs.append(last_stable)
                 print("##########")
-                if sum(x == num_reqs_before_first_stable + 1 for x in last_stable_seqs) == 2 * bft_network.config.f - 1:
+                if sum(x == num_reqs_before_first_stable + 1 for x in last_stable_seqs) == bft_network.config.f:
                     # step 5 completed
                     break
                 else:
@@ -159,9 +160,9 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
                     with trio.move_on_after(seconds=1):
                         await print_metrics()
 
-            bft_network.start_replica(6)
+            bft_network.start_replica(5)
             while True:
-                view = await bft_network.get_metric(6, bft_network, 'Gauges', "view")
+                view = await bft_network.get_metric(5, bft_network, 'Gauges', "view")
                 if view == 1:
                     break
                 else:
@@ -171,10 +172,10 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
             with trio.move_on_after(seconds=30):
                 await print_metrics()
 
-            bft_network.start_replica(5)
+            bft_network.start_replica(0)
             while True:
-                view = await bft_network.get_metric(5, bft_network, 'Gauges', "view")
-                if view == 1:
+                view = await bft_network.get_metric(0, bft_network, 'Gauges', "view")
+                if view >= 1:
                     break
                 else:
                     with trio.move_on_after(seconds=1):
@@ -187,7 +188,6 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
         #     err_msg="Make sure a view change happens from 0 to 1"
         # )
 
-        await trio.sleep(seconds=30)
         async with trio.open_nursery() as nursery:
             nursery.start_soon(print_metrics)
             while True:

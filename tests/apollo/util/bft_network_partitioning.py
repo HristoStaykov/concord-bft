@@ -275,7 +275,8 @@ class ReplicaOneWayTwoSubsetsIsolatingAdversary(NetworkPartitioningAdversary):
     of replicas will be dropped.
     """
 
-    def __init__(self, bft_network, blocked_receivers, blocked_senders, blocked_receivers2=[], blocked_senders2=[]):
+    def __init__(self, bft_network, blocked_receivers, blocked_senders, blocked_receivers2=[], blocked_senders2=[],
+                 blocked_receivers3=[], blocked_senders3=[]):
         assert len(blocked_receivers) < bft_network.config.n
         assert len(blocked_senders) < bft_network.config.n
         self.blocked_receivers = blocked_receivers
@@ -284,6 +285,10 @@ class ReplicaOneWayTwoSubsetsIsolatingAdversary(NetworkPartitioningAdversary):
         assert len(blocked_senders2) < bft_network.config.n
         self.blocked_receivers2 = blocked_receivers2
         self.blocked_senders2 = blocked_senders2
+        assert len(blocked_receivers3) < bft_network.config.n
+        assert len(blocked_senders3) < bft_network.config.n
+        self.blocked_receivers3 = blocked_receivers3
+        self.blocked_senders3 = blocked_senders3
         super(ReplicaOneWayTwoSubsetsIsolatingAdversary, self).__init__(bft_network)
 
     def interfere(self):
@@ -293,6 +298,10 @@ class ReplicaOneWayTwoSubsetsIsolatingAdversary(NetworkPartitioningAdversary):
                 self._drop_packets_between(sender, receiver)
         for sender in self.blocked_senders2:
             for receiver in self.blocked_receivers2:
+                assert sender != receiver
+                self._drop_packets_between(sender, receiver)
+        for sender in self.blocked_senders3:
+            for receiver in self.blocked_receivers3:
                 assert sender != receiver
                 self._drop_packets_between(sender, receiver)
 
