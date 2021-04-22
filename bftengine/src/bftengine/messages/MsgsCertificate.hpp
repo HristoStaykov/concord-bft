@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <forward_list>
+#include "Logger.hpp"
 
 // TODO(GG): write a simpler version (we don't really need all features of this class)
 
@@ -234,6 +235,7 @@ void MsgsCertificate<T, SelfTrust, SelfIsRequired, KeepAllMsgs, ExternalFunc>::a
       sizeOfBestClass = cls.size;
     }
 
+    LOG_INFO(GL, "DEBUG MsgCertificate.addMsg" << " sizeOfBestClass = " << sizeOfBestClass << " required = " << required);
     if ((relevantClass == bestClass) && (sizeOfBestClass >= required)) {
       // reached the required amount of messages
       tryToMarkComplete();
@@ -285,6 +287,7 @@ void MsgsCertificate<T, SelfTrust, SelfIsRequired, KeepAllMsgs, ExternalFunc>::a
 
   hasTrustedSelfClass = true;
 
+  LOG_INFO(GL, "DEBUG MsgCertificate.addSelfMsg" << " classInfo.size = " << classInfo.size << " required = "<< required);
   if (classInfo.size >= required) {
     // reached the required amount of messages
     tryToMarkComplete();

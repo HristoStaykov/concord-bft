@@ -1679,12 +1679,13 @@ void ReplicaImp::onMessage<CheckpointMsg>(CheckpointMsg *msg) {
                                                       "bft_handle_checkpoint_msg");
 
   if ((msgSeqNum > lastStableSeqNum) && (msgSeqNum <= lastStableSeqNum + kWorkWindowSize)) {
+    LOG_INFO(GL, "DEBUG " << KVLOG(msgSenderId, msgSeqNum, msgDigest, msgIsStable));
     ConcordAssert(mainLog->insideActiveWindow(msgSeqNum));
     CheckpointInfo &checkInfo = checkpointsLog->get(msgSeqNum);
     bool msgAdded = checkInfo.addCheckpointMsg(msg, msg->senderId());
 
     if (msgAdded) {
-      LOG_DEBUG(GL, "Added checkpoint message: " << KVLOG(msgSenderId));
+      LOG_INFO(GL, "Added checkpoint message: " << KVLOG(msgSenderId));
     }
 
     if (checkInfo.isCheckpointCertificateComplete()) {  // 2f + 1
@@ -2335,7 +2336,7 @@ void ReplicaImp::MoveToHigherView(ViewNum nextView) {
 
   const bool wasInPrevViewNumber = viewsManager->viewIsActive(curView);
 
-  LOG_INFO(VC_LOG, "Moving to higher view: " << KVLOG(curView, nextView, wasInPrevViewNumber));
+  LOG_INFO(VC_LOG, "Moving to higher view: " << KVLOG(curView, nextView, wasInPrevViewNumber, lastStableSeqNum));
 
   ViewChangeMsg *pVC = nullptr;
 
@@ -3970,10 +3971,10 @@ void ReplicaImp::executeRequestsInPrePrepareMsg(concordUtils::SpanWrapper &paren
     auto dur = controller->durationSincePrePrepare(lastExecutedSeqNum + 1);
     if (dur > 0) {
       // Primary
-      LOG_DEBUG(CNSUS, "Consensus reached, sleep_duration_ms [" << dur << "ms]");
+      LOG_INFO(CNSUS, "Consensus reached, sleep_duration_ms [" << dur << "ms]");
 
     } else {
-      LOG_DEBUG(CNSUS, "Consensus reached");
+      LOG_INFO(CNSUS, "Consensus reached");
     }
     executeRequestsAndSendResponses(ppMsg, requestSet, span);
   }

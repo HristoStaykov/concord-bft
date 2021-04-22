@@ -50,7 +50,7 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
 
     __test__ = False  # so that PyTest ignores this test scenario
 
-    @unittest.skip("Edge case scenario - not part of CI")
+    # @unittest.skip("Edge case scenario - not part of CI")
     @with_trio
     @with_bft_network(start_replica_cmd, selected_configs=lambda n, f, c: f == 2)
     async def test_view_change_with_f_replicas_collected_stable_checkpoint(self, bft_network):
@@ -76,6 +76,19 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
         skvbc = kvbc.SimpleKVBCProtocol(bft_network)
 
         num_reqs_before_first_stable = 149
+
+        async def print_metrics():
+            while True:
+                for replica_id in bft_network.get_live_replicas():
+                    last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
+                    last_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
+                    view = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "view")
+                    print(f"replica = {replica_id}; "
+                          f"view = {view}; "
+                          f"last_stable = {last_stable}; "
+                          f"lase_exec = {last_exec}")
+                print("##########")
+                await trio.sleep(seconds=3)
 
         async def write_req(num_req=1):
             for _ in range(num_req):
@@ -105,17 +118,18 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
         last_stable_seqs = []
 
         # step 4
-        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}) as adversary:
+        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}, {6}, {3, 4, 5}) as adversary:
             adversary.interfere()
 
             while True:
                 for replica_id in bft_network.get_live_replicas():
                     last_stable = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastStableSeqNum")
                     last_exec = await bft_network.get_metric(replica_id, bft_network, 'Gauges', "lastExecutedSeqNum")
-                    log.log_message(message_type=f"replica = {replica_id}; last_stable = {last_stable};\
+                    print(f"replica = {replica_id}; last_stable = {last_stable};\
                                                    lase_exec = {last_exec}")
                     last_stable_seqs.append(last_stable)
-                if sum(x == num_reqs_before_first_stable + 1 for x in last_stable_seqs) == 2 * bft_network.config.f:
+                print("##########")
+                if sum(x == num_reqs_before_first_stable + 1 for x in last_stable_seqs) == 2 * bft_network.config.f - 1:
                     # step 5 completed
                     break
                 else:
@@ -123,24 +137,63 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
                     await write_req()
                     await trio.sleep(seconds=3)
 
-        # step 6
-        bft_network.stop_replica(0)
-        bft_network.stop_replica(6)
-        bft_network.start_replica(1)
-        bft_network.start_replica(2)
+            # step 6
+            bft_network.stop_replica(0)
+            bft_network.stop_replica(6)
+            bft_network.stop_replica(5)
+            bft_network.start_replica(1)
+            bft_network.start_replica(2)
 
-        # Send a Client Request to trigger View Change
-        with trio.move_on_after(seconds=3):
-            await write_req()
+            # Send a Client Request to trigger View Change
+            with trio.move_on_after(seconds=3):
+                await write_req()
+
+            while True:
+                view1 = await bft_network.get_metric(1, bft_network, 'Gauges', "view")
+                view2 = await bft_network.get_metric(2, bft_network, 'Gauges', "view")
+                view3 = await bft_network.get_metric(3, bft_network, 'Gauges', "view")
+                if view1 == view2 and view2 == view3 and view3 == 1:
+                    break
+                else:
+                    print(f"{view1}, {view2}, {view3}")
+                    with trio.move_on_after(seconds=1):
+                        await print_metrics()
+
+            bft_network.start_replica(6)
+            while True:
+                view = await bft_network.get_metric(6, bft_network, 'Gauges', "view")
+                if view == 1:
+                    break
+                else:
+                    with trio.move_on_after(seconds=1):
+                        await print_metrics()
+
+            with trio.move_on_after(seconds=30):
+                await print_metrics()
+
+            bft_network.start_replica(5)
+            while True:
+                view = await bft_network.get_metric(5, bft_network, 'Gauges', "view")
+                if view == 1:
+                    break
+                else:
+                    with trio.move_on_after(seconds=1):
+                        await print_metrics()
 
         # step 7
-        await bft_network.wait_for_view(
-            replica_id=1,
-            expected=lambda v: v == 1,
-            err_msg="Make sure a view change happens from 0 to 1"
-        )
+        # await bft_network.wait_for_view(
+        #     replica_id=1,
+        #     expected=lambda v: v == 1,
+        #     err_msg="Make sure a view change happens from 0 to 1"
+        # )
 
-        await skvbc.wait_for_liveness()
+        await trio.sleep(seconds=30)
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(print_metrics)
+            while True:
+                # Send a Client Request to trigger View Change
+                with trio.move_on_after(seconds=3):
+                    await write_req()
 
 
     # @unittest.skipIf(environ.get('BUILD_COMM_TCP_TLS', "").lower() == "true", "Unstable on CI (TCP/TLS only)")
