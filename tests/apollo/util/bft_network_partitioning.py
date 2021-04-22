@@ -275,35 +275,23 @@ class ReplicaOneWayTwoSubsetsIsolatingAdversary(NetworkPartitioningAdversary):
     of replicas will be dropped.
     """
 
-    def __init__(self, bft_network, blocked_receivers, blocked_senders, blocked_receivers2=[], blocked_senders2=[],
-                 blocked_receivers3=[], blocked_senders3=[]):
-        assert len(blocked_receivers) < bft_network.config.n
-        assert len(blocked_senders) < bft_network.config.n
-        self.blocked_receivers = blocked_receivers
-        self.blocked_senders = blocked_senders
-        assert len(blocked_receivers2) < bft_network.config.n
-        assert len(blocked_senders2) < bft_network.config.n
-        self.blocked_receivers2 = blocked_receivers2
-        self.blocked_senders2 = blocked_senders2
-        assert len(blocked_receivers3) < bft_network.config.n
-        assert len(blocked_senders3) < bft_network.config.n
-        self.blocked_receivers3 = blocked_receivers3
-        self.blocked_senders3 = blocked_senders3
+    def __init__(self, bft_network, blocked_receivers, blocked_senders):
+        self._rules = []
+        self.config = bft_network.config
+        self.add_rule(blocked_receivers, blocked_senders)
         super(ReplicaOneWayTwoSubsetsIsolatingAdversary, self).__init__(bft_network)
 
+    def add_rule(self, blocked_receivers, blocked_senders):
+        assert len(blocked_receivers) < self.config.n
+        assert len(blocked_senders) < self.config.n
+        self._rules.append((blocked_receivers, blocked_senders))
+
     def interfere(self):
-        for sender in self.blocked_senders:
-            for receiver in self.blocked_receivers:
-                assert sender != receiver
-                self._drop_packets_between(sender, receiver)
-        for sender in self.blocked_senders2:
-            for receiver in self.blocked_receivers2:
-                assert sender != receiver
-                self._drop_packets_between(sender, receiver)
-        for sender in self.blocked_senders3:
-            for receiver in self.blocked_receivers3:
-                assert sender != receiver
-                self._drop_packets_between(sender, receiver)
+        for blocked_receivers, blocked_senders in self._rules:
+            for sender in blocked_senders:
+                for receiver in blocked_receivers:
+                    assert sender != receiver
+                    self._drop_packets_between(sender, receiver)
 
 class ReplicaSubsetTwoWayIsolatingAdversary(NetworkPartitioningAdversary):
     """

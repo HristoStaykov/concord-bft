@@ -118,8 +118,9 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
         last_stable_seqs = []
 
         # step 4
-        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}, {6}, {3, 4, 5},
-                                                           {4}, {3, 5, 6}) as adversary:
+        with net.ReplicaOneWayTwoSubsetsIsolatingAdversary(bft_network, {3}, {6, 5, 4}) as adversary:
+            adversary.add_rule({6}, {3, 4, 5})
+            adversary.add_rule({4}, {3, 5, 6})
             adversary.interfere()
 
             while True:
@@ -149,44 +150,15 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
             with trio.move_on_after(seconds=3):
                 await write_req()
 
-            while True:
-                view1 = await bft_network.get_metric(1, bft_network, 'Gauges', "view")
-                view2 = await bft_network.get_metric(2, bft_network, 'Gauges', "view")
-                view3 = await bft_network.get_metric(3, bft_network, 'Gauges', "view")
-                if view1 == view2 and view2 == view3 and view3 == 1:
-                    break
-                else:
-                    print(f"{view1}, {view2}, {view3}")
-                    with trio.move_on_after(seconds=1):
-                        await print_metrics()
-
             bft_network.start_replica(5)
-            while True:
-                view = await bft_network.get_metric(5, bft_network, 'Gauges', "view")
-                if view == 1:
-                    break
-                else:
-                    with trio.move_on_after(seconds=1):
-                        await print_metrics()
-
-            with trio.move_on_after(seconds=30):
-                await print_metrics()
-
             bft_network.start_replica(0)
-            while True:
-                view = await bft_network.get_metric(0, bft_network, 'Gauges', "view")
-                if view >= 1:
-                    break
-                else:
-                    with trio.move_on_after(seconds=1):
-                        await print_metrics()
 
         # step 7
-        # await bft_network.wait_for_view(
-        #     replica_id=1,
-        #     expected=lambda v: v == 1,
-        #     err_msg="Make sure a view change happens from 0 to 1"
-        # )
+        await bft_network.wait_for_view(
+            replica_id=1,
+            expected=lambda v: v == 1,
+            err_msg="Make sure a view change happens from 0 to 1"
+        )
 
         async with trio.open_nursery() as nursery:
             nursery.start_soon(print_metrics)
