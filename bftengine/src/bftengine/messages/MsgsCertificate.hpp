@@ -56,6 +56,8 @@ class MsgsCertificate {
 
   T* selfMsg() const;
 
+  T* getMsg(ReplicaId replicaId) const;
+
   T* bestCorrectMsg() const;
 
   void tryToMarkComplete();
@@ -314,6 +316,16 @@ template <typename T, bool SelfTrust, bool SelfIsRequired, bool KeepAllMsgs, typ
 T* MsgsCertificate<T, SelfTrust, SelfIsRequired, KeepAllMsgs, ExternalFunc>::selfMsg() const {
   T* retVal = nullptr;
   auto pos = msgsFromReplicas.find(selfId);
+
+  if (pos != msgsFromReplicas.end()) retVal = pos->second;
+
+  return retVal;
+}
+
+template <typename T, bool SelfTrust, bool SelfIsRequired, bool KeepAllMsgs, typename ExternalFunc>
+T* MsgsCertificate<T, SelfTrust, SelfIsRequired, KeepAllMsgs, ExternalFunc>::getMsg(ReplicaId replicaId) const {
+  T* retVal = nullptr;
+  auto pos = msgsFromReplicas.find(replicaId);
 
   if (pos != msgsFromReplicas.end()) retVal = pos->second;
 

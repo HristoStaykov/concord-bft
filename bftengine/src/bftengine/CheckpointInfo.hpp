@@ -49,6 +49,10 @@ class CheckpointInfo {
 
   CheckpointMsg* selfCheckpointMsg() const;
 
+  CheckpointMsg* getCheckpointMsg(ReplicaId replicaId) const;
+
+  bool hasMsgFromReplica(ReplicaId replicaId) const;
+
   void tryToMarkCheckpointCertificateCompleted();
 
   bool checkpointSentAllOrApproved() const;

@@ -41,6 +41,14 @@ bool CheckpointInfo::isCheckpointCertificateComplete() const { return checkpoint
 
 CheckpointMsg* CheckpointInfo::selfCheckpointMsg() const { return checkpointCertificate->selfMsg(); }
 
+CheckpointMsg* CheckpointInfo::getCheckpointMsg(ReplicaId replicaId) const {
+  return checkpointCertificate->getMsg(replicaId);
+}
+
+bool CheckpointInfo::hasMsgFromReplica(ReplicaId replicaId) const {
+  return checkpointCertificate->hasMsgFromReplica(replicaId);
+}
+
 void CheckpointInfo::tryToMarkCheckpointCertificateCompleted() { checkpointCertificate->tryToMarkComplete(); }
 
 bool CheckpointInfo::checkpointSentAllOrApproved() const { return sentToAllOrApproved; }
