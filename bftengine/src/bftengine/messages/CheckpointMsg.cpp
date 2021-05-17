@@ -50,7 +50,8 @@ void CheckpointMsg::validate(const ReplicasInfo& repInfo) const {
       (!repInfo.isIdOfReplica(senderId())) || (seqNumber() % checkpointWindowSize != 0) || (digestOfState().isZero()))
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": basic validations"));
 
-  if (!sigManager->verifySig(idOfGeneratedReplica(), body(), sizeof(Header), body() + sizeof(Header), sigLen))
+  if (!sigManager->verifySig(
+          idOfGeneratedReplica(), body(), sizeof(Header), body() + sizeof(Header) + spanContextSize(), sigLen))
     throw std::runtime_error(__PRETTY_FUNCTION__ + std::string(": verifySig"));
   // TODO(GG): consider to protect against messages that are larger than needed (here and in other messages)
 }
