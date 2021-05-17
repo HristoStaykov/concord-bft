@@ -1695,7 +1695,7 @@ void ReplicaImp::onMessage<CheckpointMsg>(CheckpointMsg *msg) {
   SCOPED_MDC_SEQ_NUM(std::to_string(msgSeqNum));
   LOG_INFO(GL,
            "Received checkpoint message from node. "
-               << KVLOG(msgGenReplicaId, msgSeqNum, msg->size(), msgIsStable, msgDigest));
+               << KVLOG(msg->senderId(), msgGenReplicaId, msgSeqNum, msg->size(), msgIsStable, msgDigest));
   LOG_INFO(GL, "My " << KVLOG(lastStableSeqNum, lastExecutedSeqNum));
   auto span = concordUtils::startChildSpanFromContext(msg->spanContext<std::remove_pointer<decltype(msg)>::type>(),
                                                       "bft_handle_checkpoint_msg");
@@ -1734,14 +1734,17 @@ void ReplicaImp::onMessage<CheckpointMsg>(CheckpointMsg *msg) {
       if (pos != tableOfStableCheckpoints.end()) delete pos->second;
       CheckpointMsg *x = new CheckpointMsg(msgGenReplicaId, msgSeqNum, msgDigest, msgIsStable);
       tableOfStableCheckpoints[msgGenReplicaId] = x;
-      LOG_INFO(GL, "Added stable Checkpoint message to tableOfStableCheckpoints: " << KVLOG(msgGenReplicaId));
+      LOG_INFO(
+          GL,
+          "Added stable Checkpoint message to tableOfStableCheckpoints: " << KVLOG(msg->senderId(), msgGenReplicaId));
       for (auto &[r, cp] : tableOfStableCheckpoints) {
         if (cp->seqNumber() == msgSeqNum && cp->digestOfState() != x->digestOfState()) {
           metric_indicator_of_non_determinism_.Get().Inc();
           LOG_ERROR(GL,
                     "Detect non determinism, for checkpoint: "
                         << msgSeqNum << " [replica: " << r << ", digest: " << cp->digestOfState()
-                        << "] Vs [replica: " << msgGenReplicaId << ", digest: " << x->digestOfState() << "]");
+                        << "] Vs [replica: " << msgGenReplicaId << ", sender: " << msg->senderId()
+                        << ", digest: " << x->digestOfState() << "]");
         }
       }
       if ((uint16_t)tableOfStableCheckpoints.size() >= config_.getfVal() + 1) {
