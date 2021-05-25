@@ -199,6 +199,11 @@ void DebugPersistentStorage::setDescriptorOfLastExecution(const DescriptorOfLast
   descriptorOfLastExecution_ = DescriptorOfLastExecution{d.executedSeqNum, d.validRequests};
 }
 
+void DebugPersistentStorage::setDescriptorOfLastStableCheckpoint(
+    const DescriptorOfLastStableCheckpoint &stableCheckDesc) {
+  (void)stableCheckDesc;
+}
+
 void DebugPersistentStorage::setLastStableSeqNum(SeqNum seqNum) {
   ConcordAssert(seqNum >= lastStableSeqNum_);
   lastStableSeqNum_ = seqNum;
@@ -291,6 +296,11 @@ bool DebugPersistentStorage::hasDescriptorOfLastExitFromView() {
   return hasDescriptorOfLastExitFromView_;
 }
 
+bool DebugPersistentStorage::hasDescriptorOfLastStableCheckpoint() {
+  ConcordAssert(getIsAllowed());
+  return hasDescriptorOfLastStableCheckpoint_;
+}
+
 DescriptorOfLastExitFromView DebugPersistentStorage::getAndAllocateDescriptorOfLastExitFromView() {
   ConcordAssert(getIsAllowed());
   ConcordAssert(hasDescriptorOfLastExitFromView_);
@@ -363,6 +373,10 @@ DescriptorOfLastExecution DebugPersistentStorage::getDescriptorOfLastExecution()
   DescriptorOfLastExecution &d = descriptorOfLastExecution_;
 
   return DescriptorOfLastExecution{d.executedSeqNum, d.validRequests};
+}
+
+DescriptorOfLastStableCheckpoint DebugPersistentStorage::getAndAllocateDescriptorOfLastStableCheckpoint() {
+  return {0, {}};
 }
 
 SeqNum DebugPersistentStorage::getLastStableSeqNum() {

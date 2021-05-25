@@ -35,6 +35,7 @@ class DebugPersistentStorage : public PersistentStorage {
   void setDescriptorOfLastExitFromView(const DescriptorOfLastExitFromView& prevViewDesc) override;
   void setDescriptorOfLastNewView(const DescriptorOfLastNewView& prevViewDesc) override;
   void setDescriptorOfLastExecution(const DescriptorOfLastExecution& prevViewDesc) override;
+  void setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint& stableCheckDesc) override;
   void setLastStableSeqNum(SeqNum seqNum) override;
   void clearSeqNumWindow() override;
   void setPrePrepareMsgInSeqNumWindow(SeqNum seqNum, PrePrepareMsg* msg) override;
@@ -55,6 +56,8 @@ class DebugPersistentStorage : public PersistentStorage {
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   bool hasDescriptorOfLastExecution() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
+  bool hasDescriptorOfLastStableCheckpoint() override;
+  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
   SeqNum getLastStableSeqNum() override;
   PrePrepareMsg* getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;
@@ -93,6 +96,8 @@ class DebugPersistentStorage : public PersistentStorage {
       DescriptorOfLastNewView{0, nullptr, std::vector<ViewChangeMsg*>(0), nullptr, 0, 0};
   bool hasDescriptorOfLastExecution_ = false;
   DescriptorOfLastExecution descriptorOfLastExecution_ = DescriptorOfLastExecution{0, Bitmap()};
+  bool hasDescriptorOfLastStableCheckpoint_ = false;
+  DescriptorOfLastStableCheckpoint descriptorOfLastStableCheckpoint_ = {uint16_t(2 * fVal_ + cVal_ + 1), {}};
 
   SeqNum lastStableSeqNum_ = 0;
 

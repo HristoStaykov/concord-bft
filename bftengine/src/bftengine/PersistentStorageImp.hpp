@@ -92,7 +92,8 @@ const uint16_t numOfLastExitFromViewDescObjs = kWorkWindowSize + 1;
 enum DescMetadataParameterIds {
   LAST_EXIT_FROM_VIEW_DESC = WIN_PARAMETERS_NUM + reservedWindowParamsNum,
   LAST_EXEC_DESC = LAST_EXIT_FROM_VIEW_DESC + numOfLastExitFromViewDescObjs,
-  LAST_NEW_VIEW_DESC
+  LAST_NEW_VIEW_DESC,
+  LAST_STABLE_CHECKPOINT_DESC
 };
 
 typedef unique_ptr<MetadataStorage::ObjectDesc[]> ObjectDescUniquePtr;
@@ -115,6 +116,7 @@ class PersistentStorageImp : public PersistentStorage {
   void setDescriptorOfLastExitFromView(const DescriptorOfLastExitFromView &prevViewDesc) override;
   void setDescriptorOfLastNewView(const DescriptorOfLastNewView &prevViewDesc) override;
   void setDescriptorOfLastExecution(const DescriptorOfLastExecution &prevViewDesc) override;
+  void setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc) override;
 
   void setLastStableSeqNum(SeqNum seqNum) override;
   void setPrePrepareMsgInSeqNumWindow(SeqNum seqNum, PrePrepareMsg *msg) override;
@@ -144,6 +146,7 @@ class PersistentStorageImp : public PersistentStorage {
   DescriptorOfLastExitFromView getAndAllocateDescriptorOfLastExitFromView() override;
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
+  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
 
   PrePrepareMsg *getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;
@@ -160,6 +163,7 @@ class PersistentStorageImp : public PersistentStorage {
   bool hasDescriptorOfLastExitFromView() override;
   bool hasDescriptorOfLastNewView() override;
   bool hasDescriptorOfLastExecution() override;
+  bool hasDescriptorOfLastStableCheckpoint() override;
 
   // Returns 'true' in case storage is empty
   bool init(std::unique_ptr<MetadataStorage> metadataStorage, bool &erasedMetadata);
@@ -239,9 +243,11 @@ class PersistentStorageImp : public PersistentStorage {
   bool hasDescriptorOfLastExitFromView_ = false;
   bool hasDescriptorOfLastNewView_ = false;
   bool hasDescriptorOfLastExecution_ = false;
+  bool hasDescriptorOfLastStableCheckpoint_ = false;
 
   const DescriptorOfLastExecution emptyDescriptorOfLastExecution_ = DescriptorOfLastExecution{0, Bitmap()};
   DescriptorOfLastExecution descriptorOfLastExecution_ = emptyDescriptorOfLastExecution_;
+  DescriptorOfLastStableCheckpoint descriptorOfLastStableCheckpoint_ = {uint16_t(2 * fVal_ + cVal_ + 1), {}};
 
   // Parameters to be saved persistently
   std::string version_;

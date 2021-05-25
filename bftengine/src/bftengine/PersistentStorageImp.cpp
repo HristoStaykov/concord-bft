@@ -120,6 +120,8 @@ ObjectDescUniquePtr PersistentStorageImp::getDefaultMetadataObjectDescriptors(ui
   metadataObjectsArray.get()[LAST_EXIT_FROM_VIEW_DESC].maxSize = DescriptorOfLastExitFromView::simpleParamsSize();
   metadataObjectsArray.get()[LAST_EXEC_DESC].maxSize = DescriptorOfLastExecution::maxSize();
   metadataObjectsArray.get()[LAST_NEW_VIEW_DESC].maxSize = DescriptorOfLastNewView::simpleParamsSize();
+  metadataObjectsArray.get()[LAST_STABLE_CHECKPOINT_DESC].maxSize =
+      DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
 
   return metadataObjectsArray;
 }
@@ -301,6 +303,10 @@ void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastEx
   descriptorOfLastExecution_ = DescriptorOfLastExecution{desc.executedSeqNum, desc.validRequests};
 }
 
+void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(
+    const DescriptorOfLastStableCheckpoint &stableCheckDesc) {
+  (void)stableCheckDesc;
+}
 /***** Windows handling *****/
 
 /***** Private functions *****/
@@ -604,6 +610,10 @@ DescriptorOfLastExecution PersistentStorageImp::getDescriptorOfLastExecution() {
   return dbDesc;
 }
 
+DescriptorOfLastStableCheckpoint PersistentStorageImp::getAndAllocateDescriptorOfLastStableCheckpoint() {
+  return {0, {}};
+}
+
 bool PersistentStorageImp::hasDescriptorOfLastExitFromView() {
   if (!hasDescriptorOfLastExitFromView_) {
     DescriptorOfLastExitFromView storedDesc = getAndAllocateDescriptorOfLastExitFromView();
@@ -624,6 +634,7 @@ bool PersistentStorageImp::hasDescriptorOfLastNewView() {
 
 bool PersistentStorageImp::hasDescriptorOfLastExecution() { return hasDescriptorOfLastExecution_; }
 
+bool PersistentStorageImp::hasDescriptorOfLastStableCheckpoint() { return hasDescriptorOfLastStableCheckpoint_; }
 /***** Windows handling *****/
 
 /***** Private functions *****/

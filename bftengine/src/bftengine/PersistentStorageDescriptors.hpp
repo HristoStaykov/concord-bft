@@ -103,6 +103,7 @@ struct DescriptorOfLastExitFromView {
 /***** DescriptorOfLastNewView *****/
 
 typedef std::vector<ViewChangeMsg *> ViewChangeMsgsVector;
+typedef std::vector<CheckpointMsg *> CheckpointMsgsVector;
 
 struct DescriptorOfLastNewView {
   DescriptorOfLastNewView(ViewNum viewNum,
@@ -201,5 +202,28 @@ struct DescriptorOfLastExecution {
   Bitmap validRequests;
 };
 
+/***** DescriptorOfLastStableCheckpoint *****/
+
+struct DescriptorOfLastStableCheckpoint {
+  DescriptorOfLastStableCheckpoint(uint16_t numReplicasInQuorum, const CheckpointMsgsVector &msgs)
+      : numOfReplicas(numReplicasInQuorum), checkpointMsgs(msgs) {}
+
+  DescriptorOfLastStableCheckpoint() = default;
+
+  bool equals(const DescriptorOfLastStableCheckpoint &other) const;
+
+  void serialize(char *&buf, size_t bufLen, size_t &actualSize) const;
+  void deserialize(char *buf, size_t bufLen, size_t &actualSize);
+
+  static uint32_t maxSize(uint16_t numReplicasInQuorum) {
+    return sizeof(numMsgs) + (maxMessageSizeInLocalBuffer<CheckpointMsg>() * numReplicasInQuorum);
+  };
+
+  uint16_t numOfReplicas;
+
+  mutable uint16_t numMsgs;
+
+  CheckpointMsgsVector checkpointMsgs;
+};
 }  // namespace impl
 }  // namespace bftEngine
