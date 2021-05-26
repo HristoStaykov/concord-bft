@@ -2797,12 +2797,11 @@ void ReplicaImp::onSeqNumIsStable(SeqNum newStableSeqNum, bool hasStateInformati
     ps_->setLastStableSeqNum(lastStableSeqNum);
 
     auto &CheckpointInfo = checkpointsLog->get(lastStableSeqNum);
-    uint16_t quorumSize = 2 * config_.getfVal() + config_.getcVal() + 1;
     std::vector<CheckpointMsg *> msgs;
     for (const auto &m : CheckpointInfo.getAllCheckpointMsgs()) {
       msgs.push_back(m.second);
     }
-    DescriptorOfLastStableCheckpoint desc(quorumSize, msgs);
+    DescriptorOfLastStableCheckpoint desc(msgs.size(), msgs);
     ps_->setDescriptorOfLastStableCheckpoint(desc);
   }
 
@@ -3314,6 +3313,7 @@ ReplicaImp::ReplicaImp(const LoadedReplicaData &ld,
     auto &CheckpointInfo = checkpointsLog->get(ld.lastStableSeqNum);
     for (const auto &m : ld.lastStableCheckpointProof) {
       CheckpointInfo.addCheckpointMsg(m, m->idOfGeneratedReplica());
+      LOG_INFO(GL, "DEBUG REPL : " << KVLOG(m->idOfGeneratedReplica()));
     }
   }
 
@@ -3479,8 +3479,10 @@ ReplicaImp::ReplicaImp(const LoadedReplicaData &ld,
     ConcordAssertEQ(e.getCheckpointMsg()->senderId(), config_.getreplicaId());
     ConcordAssertOR((s != ld.lastStableSeqNum), e.getCheckpointMsg()->isStableState());
 
-    checkInfo.addCheckpointMsg(e.getCheckpointMsg(), config_.getreplicaId());
-    ConcordAssert(checkInfo.selfCheckpointMsg()->equals(*e.getCheckpointMsg()));
+    if (s != ld.lastStableSeqNum) {
+      checkInfo.addCheckpointMsg(e.getCheckpointMsg(), config_.getreplicaId());
+      ConcordAssert(checkInfo.selfCheckpointMsg()->equals(*e.getCheckpointMsg()));
+    }
 
     if (e.getCompletedMark()) checkInfo.tryToMarkCheckpointCertificateCompleted();
   }

@@ -92,8 +92,8 @@ const uint16_t numOfLastExitFromViewDescObjs = kWorkWindowSize + 1;
 enum DescMetadataParameterIds {
   LAST_EXIT_FROM_VIEW_DESC = WIN_PARAMETERS_NUM + reservedWindowParamsNum,
   LAST_EXEC_DESC = LAST_EXIT_FROM_VIEW_DESC + numOfLastExitFromViewDescObjs,
-  LAST_NEW_VIEW_DESC,
-  LAST_STABLE_CHECKPOINT_DESC
+  LAST_STABLE_CHECKPOINT_DESC,
+  LAST_NEW_VIEW_DESC
 };
 
 typedef unique_ptr<MetadataStorage::ObjectDesc[]> ObjectDescUniquePtr;

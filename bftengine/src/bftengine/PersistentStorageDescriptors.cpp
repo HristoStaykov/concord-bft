@@ -352,9 +352,10 @@ void DescriptorOfLastStableCheckpoint::serialize(char *&buf, size_t bufLen, size
   actualSize = 0;
 
   numMsgs = checkpointMsgs.size();
+  printf("DEBUG numMsgs = %hu\n", numMsgs);
 
   size_t numMsgsSize = sizeof(numMsgs);
-  memcpy(&buf, &numMsgs, numMsgsSize);
+  memcpy(buf, &numMsgs, numMsgsSize);
   buf += numMsgsSize;
   actualSize += numMsgsSize;
 
@@ -365,7 +366,7 @@ void DescriptorOfLastStableCheckpoint::serialize(char *&buf, size_t bufLen, size
 
 void DescriptorOfLastStableCheckpoint::deserialize(char *buf, size_t bufLen, size_t &actualSize) {
   size_t numMsgsSize = sizeof(numMsgs);
-  memcpy(&numMsgs, &buf, numMsgsSize);
+  memcpy(&numMsgs, buf, numMsgsSize);
   buf += numMsgsSize;
   actualSize += numMsgsSize;
 

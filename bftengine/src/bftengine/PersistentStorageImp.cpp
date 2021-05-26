@@ -299,12 +299,15 @@ void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorO
   // saveDescriptorOfLastStableCheckpoint(stableCheckDesc);
   const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
   UniquePtrToChar descBuf(new char[bufLen]);
+  printf("DEBUG allocating: %lu\n", bufLen);
   char *descBufPtr = descBuf.get();
   size_t actualSize = 0;
   stableCheckDesc.serialize(descBufPtr, bufLen, actualSize);
   ConcordAssert(actualSize != 0);
+  printf("DEBUG actualSize: %lu\n", actualSize);
   metadataStorage_->writeInBatch(LAST_STABLE_CHECKPOINT_DESC, descBuf.get(), actualSize);
 
+  hasDescriptorOfLastStableCheckpoint_ = true;
   (void)stableCheckDesc;
   (void)init;
 }
