@@ -297,6 +297,14 @@ void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorO
                                                                bool init) {
   // if (!init) verifyDescriptorOfLastStableCheckpoint(stableCheckDesc);
   // saveDescriptorOfLastStableCheckpoint(stableCheckDesc);
+  const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
+  UniquePtrToChar descBuf(new char[bufLen]);
+  char *descBufPtr = descBuf.get();
+  size_t actualSize = 0;
+  stableCheckDesc.serialize(descBufPtr, bufLen, actualSize);
+  ConcordAssert(actualSize != 0);
+  metadataStorage_->writeInBatch(LAST_STABLE_CHECKPOINT_DESC, descBuf.get(), actualSize);
+
   (void)stableCheckDesc;
   (void)init;
 }
@@ -319,7 +327,8 @@ void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastEx
 
 void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(
     const DescriptorOfLastStableCheckpoint &stableCheckDesc) {
-  (void)stableCheckDesc;
+  setDescriptorOfLastStableCheckpoint(stableCheckDesc, false);
+  hasDescriptorOfLastExecution_ = true;
 }
 /***** Windows handling *****/
 
@@ -621,6 +630,21 @@ DescriptorOfLastExecution PersistentStorageImp::getDescriptorOfLastExecution() {
     descriptorOfLastExecution_ = dbDesc;
     hasDescriptorOfLastExecution_ = true;
   }
+  return dbDesc;
+}
+
+DescriptorOfLastStableCheckpoint PersistentStorageImp::getAndAllocateDescriptorOfLastStableCheckpoint() {
+  ConcordAssert(getIsAllowed());
+  DescriptorOfLastStableCheckpoint dbDesc;
+  uint32_t dbDescSize = DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
+  uint32_t sizeInDb = 0;
+
+  UniquePtrToChar simpleParamsBuf(new char[dbDescSize]);
+  metadataStorage_->read(LAST_STABLE_CHECKPOINT_DESC, dbDescSize, simpleParamsBuf.get(), sizeInDb);
+
+  size_t actualSize = 0;
+  dbDesc.deserialize(simpleParamsBuf.get(), dbDescSize, actualSize);
+
   return dbDesc;
 }
 

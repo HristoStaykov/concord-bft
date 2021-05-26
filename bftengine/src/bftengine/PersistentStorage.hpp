@@ -133,6 +133,7 @@ class PersistentStorage {
   virtual DescriptorOfLastExecution getDescriptorOfLastExecution() = 0;
 
   virtual bool hasDescriptorOfLastStableCheckpoint() = 0;
+  virtual DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() = 0;
 
   virtual SeqNum getLastStableSeqNum() = 0;
 

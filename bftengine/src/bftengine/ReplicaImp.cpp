@@ -2793,7 +2793,18 @@ void ReplicaImp::onSeqNumIsStable(SeqNum newStableSeqNum, bool hasStateInformati
   lastStableSeqNum = newStableSeqNum;
   metric_last_stable_seq_num_.Get().Set(lastStableSeqNum);
 
-  if (ps_) ps_->setLastStableSeqNum(lastStableSeqNum);
+  if (ps_) {
+    ps_->setLastStableSeqNum(lastStableSeqNum);
+
+    auto &CheckpointInfo = checkpointsLog->get(lastStableSeqNum);
+    uint16_t quorumSize = 2 * config_.getfVal() + config_.getcVal() + 1;
+    std::vector<CheckpointMsg *> msgs;
+    for (const auto &m : CheckpointInfo.getAllCheckpointMsgs()) {
+      msgs.push_back(m.second);
+    }
+    DescriptorOfLastStableCheckpoint desc(quorumSize, msgs);
+    ps_->setDescriptorOfLastStableCheckpoint(desc);
+  }
 
   if (lastStableSeqNum > strictLowerBoundOfSeqNums) {
     strictLowerBoundOfSeqNums = lastStableSeqNum;
@@ -3298,6 +3309,13 @@ ReplicaImp::ReplicaImp(const LoadedReplicaData &ld,
                                                                      strictLowerBoundOfSeqNums,
                                                                      maxSeqNumTransferredFromPrevViews,
                                                                      lastViewThatTransferredSeqNumbersFullyExecuted));
+
+  if (ld.lastStableSeqNum > 0) {
+    auto &CheckpointInfo = checkpointsLog->get(ld.lastStableSeqNum);
+    for (const auto &m : ld.lastStableCheckpointProof) {
+      CheckpointInfo.addCheckpointMsg(m, m->idOfGeneratedReplica());
+    }
+  }
 
   if (inView) {
     const bool isPrimaryOfView = (repsInfo->primaryOfView(curView) == config_.getreplicaId());

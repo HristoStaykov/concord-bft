@@ -146,6 +146,7 @@ class PersistentStorageImp : public PersistentStorage {
   DescriptorOfLastExitFromView getAndAllocateDescriptorOfLastExitFromView() override;
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
+  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
 
   PrePrepareMsg *getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;
