@@ -375,10 +375,6 @@ DescriptorOfLastExecution DebugPersistentStorage::getDescriptorOfLastExecution()
   return DescriptorOfLastExecution{d.executedSeqNum, d.validRequests};
 }
 
-DescriptorOfLastStableCheckpoint DebugPersistentStorage::getAndAllocateDescriptorOfLastStableCheckpoint() {
-  return {0, {}};
-}
-
 SeqNum DebugPersistentStorage::getLastStableSeqNum() {
   ConcordAssert(getIsAllowed());
   return lastStableSeqNum_;

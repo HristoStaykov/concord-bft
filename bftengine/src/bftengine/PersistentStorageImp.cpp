@@ -75,6 +75,7 @@ void PersistentStorageImp::setDefaultsInMetadataStorage() {
   initDescriptorOfLastExitFromView();
   initDescriptorOfLastNewView();
   initDescriptorOfLastExecution();
+  initDescriptorOfLastStableCheckpoint();
   endWriteTran();
 }
 
@@ -292,9 +293,22 @@ void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastEx
   saveDescriptorOfLastExecution(desc);
 }
 
+void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc,
+                                                               bool init) {
+  // if (!init) verifyDescriptorOfLastStableCheckpoint(stableCheckDesc);
+  // saveDescriptorOfLastStableCheckpoint(stableCheckDesc);
+  (void)stableCheckDesc;
+  (void)init;
+}
+
 void PersistentStorageImp::initDescriptorOfLastExecution() {
   DescriptorOfLastExecution desc;
   setDescriptorOfLastExecution(desc, true);
+}
+
+void PersistentStorageImp::initDescriptorOfLastStableCheckpoint() {
+  DescriptorOfLastStableCheckpoint desc{0, {}};
+  setDescriptorOfLastStableCheckpoint(desc, true);
 }
 
 void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastExecution &desc) {
@@ -608,10 +622,6 @@ DescriptorOfLastExecution PersistentStorageImp::getDescriptorOfLastExecution() {
     hasDescriptorOfLastExecution_ = true;
   }
   return dbDesc;
-}
-
-DescriptorOfLastStableCheckpoint PersistentStorageImp::getAndAllocateDescriptorOfLastStableCheckpoint() {
-  return {0, {}};
 }
 
 bool PersistentStorageImp::hasDescriptorOfLastExitFromView() {

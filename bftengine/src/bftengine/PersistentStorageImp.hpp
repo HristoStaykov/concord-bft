@@ -146,7 +146,6 @@ class PersistentStorageImp : public PersistentStorage {
   DescriptorOfLastExitFromView getAndAllocateDescriptorOfLastExitFromView() override;
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
-  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
 
   PrePrepareMsg *getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;
@@ -192,7 +191,9 @@ class PersistentStorageImp : public PersistentStorage {
   void initDescriptorOfLastNewView();
   void saveDescriptorOfLastExecution(const DescriptorOfLastExecution &newDesc);
   void setDescriptorOfLastExecution(const DescriptorOfLastExecution &desc, bool init);
+  void setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc, bool init);
   void initDescriptorOfLastExecution();
+  void initDescriptorOfLastStableCheckpoint();
 
   void setVersion() const;
 
