@@ -23,8 +23,8 @@ namespace impl {
 
 const string METADATA_PARAMS_VERSION = "1.1";
 
-PersistentStorageImp::PersistentStorageImp(uint16_t fVal, uint16_t cVal)
-    : fVal_(fVal), cVal_(cVal), version_(METADATA_PARAMS_VERSION) {
+PersistentStorageImp::PersistentStorageImp(uint16_t numReplicas, uint16_t fVal, uint16_t cVal)
+    : numReplicas_(numReplicas), fVal_(fVal), cVal_(cVal), version_(METADATA_PARAMS_VERSION) {
   DescriptorOfLastNewView::setViewChangeMsgsNum(fVal, cVal);
 }
 
@@ -122,7 +122,7 @@ ObjectDescUniquePtr PersistentStorageImp::getDefaultMetadataObjectDescriptors(ui
   metadataObjectsArray.get()[LAST_EXEC_DESC].maxSize = DescriptorOfLastExecution::maxSize();
   metadataObjectsArray.get()[LAST_NEW_VIEW_DESC].maxSize = DescriptorOfLastNewView::simpleParamsSize();
   metadataObjectsArray.get()[LAST_STABLE_CHECKPOINT_DESC].maxSize =
-      DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
+      DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
 
   return metadataObjectsArray;
 }
@@ -297,7 +297,7 @@ void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorO
                                                                bool init) {
   // if (!init) verifyDescriptorOfLastStableCheckpoint(stableCheckDesc);
   // saveDescriptorOfLastStableCheckpoint(stableCheckDesc);
-  const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
+  const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
   UniquePtrToChar descBuf(new char[bufLen]);
   printf("DEBUG allocating: %lu\n", bufLen);
   char *descBufPtr = descBuf.get();
@@ -318,7 +318,7 @@ void PersistentStorageImp::initDescriptorOfLastExecution() {
 }
 
 void PersistentStorageImp::initDescriptorOfLastStableCheckpoint() {
-  DescriptorOfLastStableCheckpoint desc{static_cast<uint16_t>(2 * fVal_ + cVal_ + 1), {}};
+  DescriptorOfLastStableCheckpoint desc{numReplicas_, {}};
   setDescriptorOfLastStableCheckpoint(desc, true);
 }
 
@@ -639,7 +639,7 @@ DescriptorOfLastExecution PersistentStorageImp::getDescriptorOfLastExecution() {
 DescriptorOfLastStableCheckpoint PersistentStorageImp::getAndAllocateDescriptorOfLastStableCheckpoint() {
   ConcordAssert(getIsAllowed());
   DescriptorOfLastStableCheckpoint dbDesc;
-  uint32_t dbDescSize = DescriptorOfLastStableCheckpoint::maxSize(2 * fVal_ + cVal_ + 1);
+  uint32_t dbDescSize = DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
   uint32_t sizeInDb = 0;
 
   UniquePtrToChar simpleParamsBuf(new char[dbDescSize]);

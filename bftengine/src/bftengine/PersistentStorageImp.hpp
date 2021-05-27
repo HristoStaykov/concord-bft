@@ -100,7 +100,7 @@ typedef unique_ptr<MetadataStorage::ObjectDesc[]> ObjectDescUniquePtr;
 
 class PersistentStorageImp : public PersistentStorage {
  public:
-  PersistentStorageImp(uint16_t fVal, uint16_t cVal);
+  PersistentStorageImp(uint16_t numReplicas, uint16_t fVal, uint16_t cVal);
   ~PersistentStorageImp() override = default;
 
   uint8_t beginWriteTran() override;
@@ -233,6 +233,7 @@ class PersistentStorageImp : public PersistentStorage {
 
   const uint32_t maxVersionSize_ = 80;
 
+  const uint16_t numReplicas_;
   const uint16_t fVal_;
   const uint16_t cVal_;
 
