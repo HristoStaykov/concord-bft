@@ -295,8 +295,8 @@ void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastEx
 
 void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc,
                                                                bool init) {
-  // if (!init) verifyDescriptorOfLastStableCheckpoint(stableCheckDesc);
-  // saveDescriptorOfLastStableCheckpoint(stableCheckDesc);
+  if (!init) ConcordAssert(stableCheckDesc.checkpointMsgs.size() >= 2 * fVal_ + cVal_ + 1);
+
   const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
   UniquePtrToChar descBuf(new char[bufLen]);
   printf("DEBUG allocating: %lu\n", bufLen);
@@ -307,7 +307,6 @@ void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorO
   printf("DEBUG actualSize: %lu\n", actualSize);
   metadataStorage_->writeInBatch(LAST_STABLE_CHECKPOINT_DESC, descBuf.get(), actualSize);
 
-  hasDescriptorOfLastStableCheckpoint_ = true;
   (void)stableCheckDesc;
   (void)init;
 }
@@ -636,7 +635,7 @@ DescriptorOfLastExecution PersistentStorageImp::getDescriptorOfLastExecution() {
   return dbDesc;
 }
 
-DescriptorOfLastStableCheckpoint PersistentStorageImp::getAndAllocateDescriptorOfLastStableCheckpoint() {
+DescriptorOfLastStableCheckpoint PersistentStorageImp::getDescriptorOfLastStableCheckpoint() {
   ConcordAssert(getIsAllowed());
   DescriptorOfLastStableCheckpoint dbDesc;
   uint32_t dbDescSize = DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
@@ -671,7 +670,6 @@ bool PersistentStorageImp::hasDescriptorOfLastNewView() {
 
 bool PersistentStorageImp::hasDescriptorOfLastExecution() { return hasDescriptorOfLastExecution_; }
 
-bool PersistentStorageImp::hasDescriptorOfLastStableCheckpoint() { return hasDescriptorOfLastStableCheckpoint_; }
 /***** Windows handling *****/
 
 /***** Private functions *****/

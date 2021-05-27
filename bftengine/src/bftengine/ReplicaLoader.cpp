@@ -301,13 +301,8 @@ ReplicaLoader::ErrorCode loadReplicaData(shared_ptr<PersistentStorage> p, Loaded
       ld.validRequestsThatAreBeingExecuted = d.validRequests;
     }
   }
-  if (true || p->hasDescriptorOfLastStableCheckpoint()) {
-    const auto &desc = p->getAndAllocateDescriptorOfLastStableCheckpoint();
-    ld.lastStableCheckpointProof = desc.checkpointMsgs;
-    LOG_INFO(GL, "DEBUG loadReplicaData Successfully loaded DescriptorOfLastStableCheckpoint!");
-  } else {
-    LOG_INFO(GL, "DEBUG NO loadReplicaData Successfully loaded DescriptorOfLastStableCheckpoint!");
-  }
+  const auto &desc = p->getDescriptorOfLastStableCheckpoint();
+  ld.lastStableCheckpointProof = desc.checkpointMsgs;
   LOG_INFO(GL, "loadReplicaData Successfully loaded!");
   return Succ;
 }

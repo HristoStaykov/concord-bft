@@ -2798,17 +2798,7 @@ void ReplicaImp::onSeqNumIsStable(SeqNum newStableSeqNum, bool hasStateInformati
   lastStableSeqNum = newStableSeqNum;
   metric_last_stable_seq_num_.Get().Set(lastStableSeqNum);
 
-  if (ps_) {
-    ps_->setLastStableSeqNum(lastStableSeqNum);
-
-    auto &CheckpointInfo = checkpointsLog->get(lastStableSeqNum);
-    std::vector<CheckpointMsg *> msgs;
-    for (const auto &m : CheckpointInfo.getAllCheckpointMsgs()) {
-      msgs.push_back(m.second);
-    }
-    DescriptorOfLastStableCheckpoint desc(msgs.size(), msgs);
-    ps_->setDescriptorOfLastStableCheckpoint(desc);
-  }
+  if (ps_) ps_->setLastStableSeqNum(lastStableSeqNum);
 
   if (lastStableSeqNum > strictLowerBoundOfSeqNums) {
     strictLowerBoundOfSeqNums = lastStableSeqNum;
@@ -2873,6 +2863,16 @@ void ReplicaImp::onSeqNumIsStable(SeqNum newStableSeqNum, bool hasStateInformati
       ps_->setCheckpointMsgInCheckWindow(lastStableSeqNum, checkpointMsg);
       ps_->setCompletedMarkInCheckWindow(lastStableSeqNum, true);
     }
+  }
+
+  if (ps_) {
+    auto &CheckpointInfo = checkpointsLog->get(lastStableSeqNum);
+    std::vector<CheckpointMsg *> msgs;
+    for (const auto &m : CheckpointInfo.getAllCheckpointMsgs()) {
+      msgs.push_back(m.second);
+    }
+    DescriptorOfLastStableCheckpoint desc(msgs.size(), msgs);
+    ps_->setDescriptorOfLastStableCheckpoint(desc);
   }
 
   if (ps_) ps_->endWriteTran();

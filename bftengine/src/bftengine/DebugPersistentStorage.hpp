@@ -56,8 +56,7 @@ class DebugPersistentStorage : public PersistentStorage {
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   bool hasDescriptorOfLastExecution() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
-  bool hasDescriptorOfLastStableCheckpoint() override;
-  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
+  DescriptorOfLastStableCheckpoint getDescriptorOfLastStableCheckpoint() override;
   SeqNum getLastStableSeqNum() override;
   PrePrepareMsg* getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;

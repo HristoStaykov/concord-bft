@@ -296,11 +296,6 @@ bool DebugPersistentStorage::hasDescriptorOfLastExitFromView() {
   return hasDescriptorOfLastExitFromView_;
 }
 
-bool DebugPersistentStorage::hasDescriptorOfLastStableCheckpoint() {
-  ConcordAssert(getIsAllowed());
-  return hasDescriptorOfLastStableCheckpoint_;
-}
-
 DescriptorOfLastExitFromView DebugPersistentStorage::getAndAllocateDescriptorOfLastExitFromView() {
   ConcordAssert(getIsAllowed());
   ConcordAssert(hasDescriptorOfLastExitFromView_);
@@ -375,8 +370,8 @@ DescriptorOfLastExecution DebugPersistentStorage::getDescriptorOfLastExecution()
   return DescriptorOfLastExecution{d.executedSeqNum, d.validRequests};
 }
 
-DescriptorOfLastStableCheckpoint DebugPersistentStorage::getAndAllocateDescriptorOfLastStableCheckpoint() {
-  return {uint16_t(2 * fVal_ + cVal_ + 1), {}};
+DescriptorOfLastStableCheckpoint DebugPersistentStorage::getDescriptorOfLastStableCheckpoint() {
+  return {uint16_t(3 * fVal_ + 2 * cVal_ + 1), {}};
 }
 
 SeqNum DebugPersistentStorage::getLastStableSeqNum() {

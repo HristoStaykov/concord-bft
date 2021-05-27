@@ -146,7 +146,7 @@ class PersistentStorageImp : public PersistentStorage {
   DescriptorOfLastExitFromView getAndAllocateDescriptorOfLastExitFromView() override;
   DescriptorOfLastNewView getAndAllocateDescriptorOfLastNewView() override;
   DescriptorOfLastExecution getDescriptorOfLastExecution() override;
-  DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() override;
+  DescriptorOfLastStableCheckpoint getDescriptorOfLastStableCheckpoint() override;
 
   PrePrepareMsg *getAndAllocatePrePrepareMsgInSeqNumWindow(SeqNum seqNum) override;
   bool getSlowStartedInSeqNumWindow(SeqNum seqNum) override;
@@ -163,7 +163,6 @@ class PersistentStorageImp : public PersistentStorage {
   bool hasDescriptorOfLastExitFromView() override;
   bool hasDescriptorOfLastNewView() override;
   bool hasDescriptorOfLastExecution() override;
-  bool hasDescriptorOfLastStableCheckpoint() override;
 
   // Returns 'true' in case storage is empty
   bool init(std::unique_ptr<MetadataStorage> metadataStorage, bool &erasedMetadata);
@@ -246,11 +245,9 @@ class PersistentStorageImp : public PersistentStorage {
   bool hasDescriptorOfLastExitFromView_ = false;
   bool hasDescriptorOfLastNewView_ = false;
   bool hasDescriptorOfLastExecution_ = false;
-  bool hasDescriptorOfLastStableCheckpoint_ = false;
 
   const DescriptorOfLastExecution emptyDescriptorOfLastExecution_ = DescriptorOfLastExecution{0, Bitmap()};
   DescriptorOfLastExecution descriptorOfLastExecution_ = emptyDescriptorOfLastExecution_;
-  DescriptorOfLastStableCheckpoint descriptorOfLastStableCheckpoint_ = {uint16_t(2 * fVal_ + cVal_ + 1), {}};
 
   // Parameters to be saved persistently
   std::string version_;

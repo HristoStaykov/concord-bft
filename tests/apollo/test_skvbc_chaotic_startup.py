@@ -296,23 +296,24 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
             bft_network.start_replica(5)
             bft_network.start_replica(0)
 
+        await trio.sleep(seconds=10)
+        # Send a Client Request to trigger View Change
+        with trio.move_on_after(seconds=3):
+            await write_req()
+
         # step 7
         await bft_network.wait_for_view(
             replica_id=1,
             expected=lambda v: v == 1,
             err_msg="Make sure a view change happens from 0 to 1"
         )
-        restarted = False
+
         async with trio.open_nursery() as nursery:
             nursery.start_soon(print_metrics)
             while True:
                 # Send a Client Request to trigger View Change
                 with trio.move_on_after(seconds=3):
                     await write_req()
-                view = await bft_network.get_metric(1, bft_network, 'Gauges', "view")
-                if view >= 3 and restarted is False:
-                    restarted = True
-                    bft_network.start_replica(6)
 
 
     # @unittest.skipIf(environ.get('BUILD_COMM_TCP_TLS', "").lower() == "true", "Unstable on CI (TCP/TLS only)")

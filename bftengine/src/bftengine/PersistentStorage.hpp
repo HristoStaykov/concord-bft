@@ -80,9 +80,8 @@ class PersistentStorage {
 
   virtual void setDescriptorOfLastExecution(const DescriptorOfLastExecution &prevViewDesc) = 0;
 
-  // DescriptorOfLastStableCheckpoint contains pointers to quorum of Checkpoint messages representing
+  // DescriptorOfLastStableCheckpoint contains pointers to Checkpoint messages representing
   // the proof for our latest stable Checkpoint.
-  // (the content of the messages should be copied, the caller is the owner of these messages).
   virtual void setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc) = 0;
 
   // We have two windows "SeqNumWindow" and "CheckWindow"
@@ -132,8 +131,7 @@ class PersistentStorage {
   virtual bool hasDescriptorOfLastExecution() = 0;
   virtual DescriptorOfLastExecution getDescriptorOfLastExecution() = 0;
 
-  virtual bool hasDescriptorOfLastStableCheckpoint() = 0;
-  virtual DescriptorOfLastStableCheckpoint getAndAllocateDescriptorOfLastStableCheckpoint() = 0;
+  virtual DescriptorOfLastStableCheckpoint getDescriptorOfLastStableCheckpoint() = 0;
 
   virtual SeqNum getLastStableSeqNum() = 0;
 
