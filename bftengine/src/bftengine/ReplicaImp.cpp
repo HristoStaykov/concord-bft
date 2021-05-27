@@ -2006,7 +2006,12 @@ void ReplicaImp::onMessage<ReplicaStatusMsg>(ReplicaStatusMsg *msg) {
 
     auto &CheckpointInfo = checkpointsLog->get(lastStableSeqNum);
     for (const auto &it : CheckpointInfo.getAllCheckpointMsgs()) {
-      sendAndIncrementMetric(it.second, msgSenderId, metric_sent_checkpoint_msg_due_to_status_);
+      if (msgSenderId != it.first) {
+        sendAndIncrementMetric(it.second, msgSenderId, metric_sent_checkpoint_msg_due_to_status_);
+        LOG_INFO(GL,
+                 "DEBUG Forwarding Cehckpoints to "
+                     << KVLOG(msgSenderId, it.second->idOfGeneratedReplica(), it.second->seqNumber()));
+      }
     }
   } else if (msgLastStable > lastStableSeqNum + kWorkWindowSize) {
     tryToSendStatusReport();  // ask for help
