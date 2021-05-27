@@ -20,7 +20,7 @@ if(LEAKCHECK)
   # For Leak Sanitizers to report errors we need to shut down processes gracefully
   set(APOLLO_TEST_ENV "${APOLLO_TEST_ENV} GRACEFUL_SHUTDOWN=true")
   set(APOLLO_TEST_ENV "${APOLLO_TEST_ENV} \
-  ASAN_OPTIONS=log_path=${ASAN_LOG_DIR}/leak.log:symbolize=1:check_initialization_order=1:detect_leaks=1 \
+  ASAN_OPTIONS=symbolize=1:check_initialization_order=1:detect_leaks=1 \
   ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer\
   ")
 endif()

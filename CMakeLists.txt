@@ -46,7 +46,7 @@ option(BUILD_COMM_TCP_TLS "Enable TCP TLS communication" FALSE)
 option(BUILD_ROCKSDB_STORAGE "Enable building of RocksDB storage library" TRUE)
 
 # Build S3 Object Store support.
-option(USE_S3_OBJECT_STORE "Enable S3 Object Store" FALSE)
+option(USE_S3_OBJECT_STORE "Enable S3 Object Store" TRUE)
 
 # Build Slowdown framework
 option(BUILD_SLOWDOWN "Build Slowdown framework" FALSE)
@@ -145,8 +145,8 @@ add_subdirectory(scripts)
 add_subdirectory(diagnostics)
 add_subdirectory(bftclient)
 add_subdirectory(reconfiguration)
-add_subdirectory(client)
-add_subdirectory(thin-replica-server)
+#add_subdirectory(client)
+#add_subdirectory(thin-replica-server)
 
 #
 # Setup testing
