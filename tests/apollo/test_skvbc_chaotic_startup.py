@@ -312,18 +312,7 @@ class SkvbcChaoticStartupTest(unittest.TestCase):
                 view = await bft_network.get_metric(1, bft_network, 'Gauges', "view")
                 if view >= 3 and restarted is False:
                     restarted = True
-                    bft_network.stop_replica(0)
-                    bft_network.start_replica(0)
-                    bft_network.stop_replica(1)
-                    bft_network.start_replica(1)
-                    bft_network.stop_replica(2)
-                    bft_network.start_replica(2)
-                    bft_network.stop_replica(3)
-                    bft_network.start_replica(3)
-                    bft_network.stop_replica(4)
-                    bft_network.start_replica(4)
-                    bft_network.stop_replica(5)
-                    bft_network.start_replica(5)
+                    bft_network.start_replica(6)
 
 
     # @unittest.skipIf(environ.get('BUILD_COMM_TCP_TLS', "").lower() == "true", "Unstable on CI (TCP/TLS only)")

@@ -216,8 +216,9 @@ struct DescriptorOfLastStableCheckpoint {
   void deserialize(char *buf, size_t bufLen, size_t &actualSize);
 
   static uint32_t maxSize(uint16_t numReplicasInQuorum) {
-    printf("DEBUG: SIZE=%lu\n", sizeof(numMsgs) + (maxMessageSizeInLocalBuffer<CheckpointMsg>() * 10));
-    return sizeof(numMsgs) + (maxMessageSizeInLocalBuffer<CheckpointMsg>() * 10);
+    auto totalSize = (sizeof(numMsgs) + (maxMessageSizeInLocalBuffer<CheckpointMsg>() * numReplicasInQuorum));
+    printf("DEBUG: SIZE=%lu, numRepl=%d\n", totalSize, numReplicasInQuorum);
+    return sizeof(numMsgs) + (maxMessageSizeInLocalBuffer<CheckpointMsg>() * numReplicasInQuorum);
   };
 
   uint16_t numOfReplicas;

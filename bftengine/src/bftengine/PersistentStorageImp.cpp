@@ -318,7 +318,7 @@ void PersistentStorageImp::initDescriptorOfLastExecution() {
 }
 
 void PersistentStorageImp::initDescriptorOfLastStableCheckpoint() {
-  DescriptorOfLastStableCheckpoint desc{0, {}};
+  DescriptorOfLastStableCheckpoint desc{static_cast<uint16_t>(2 * fVal_ + cVal_ + 1), {}};
   setDescriptorOfLastStableCheckpoint(desc, true);
 }
 
