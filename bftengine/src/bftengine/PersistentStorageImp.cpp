@@ -295,7 +295,6 @@ void PersistentStorageImp::setDescriptorOfLastExecution(const DescriptorOfLastEx
 
 void PersistentStorageImp::setDescriptorOfLastStableCheckpoint(const DescriptorOfLastStableCheckpoint &stableCheckDesc,
                                                                bool init) {
-  if (!init) ConcordAssert(stableCheckDesc.checkpointMsgs.size() >= 2 * fVal_ + cVal_ + 1);
 
   const size_t bufLen = DescriptorOfLastStableCheckpoint::maxSize(numReplicas_);
   UniquePtrToChar descBuf(new char[bufLen]);
