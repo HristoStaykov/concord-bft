@@ -1257,6 +1257,10 @@ std::string ReplicaImp::getReplicaState() const {
 }
 
 void ReplicaImp::onInternalMsg(GetStatus &status) const {
+  if(isCollectingState()) {
+    return status.output.set_value("** - Busy - **");
+  }
+
   if (status.key == "replica") {  // TODO: change this key name (coordinate with deployment)
     return status.output.set_value(getReplicaLastStableSeqNum());
   }
