@@ -18,24 +18,6 @@
 namespace concordUtils {
 
 // Thread-safe errno string generation.
-inline std::string errnoString(int errNum) {
-  constexpr auto size = 128 + 1;
-  char buf[size];
-#ifdef _GNU_SOURCE
-  const auto ret = strerror_r(errNum, buf, size);
-  // Documentation on the return value of the GNU version is not clear - assume it can return nullptr.
-  if (ret) {
-    return ret;
-  }
-#else
-  if (strerror_r(errNum, buf, size) == 0) {
-    // POSIX documentation is not clear on whether the buffer is always null-terminated. Be conservative and terminate
-    // it, even if it will contain some garbage data.
-    buf[size - 1] = '\0';
-    return buf;
-  }
-#endif
-  return std::string{};
-}
+inline std::string errnoString(int errNum) { return std::to_string(errNum); }
 
 }  // namespace concordUtils
