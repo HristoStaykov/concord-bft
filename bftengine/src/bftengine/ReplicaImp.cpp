@@ -2462,6 +2462,7 @@ void ReplicaImp::MoveToHigherView(ViewNum nextView) {
 
     ConcordAssertNE(pVC, nullptr);
     pVC->setNewViewNumber(nextView);
+    ConcordAssert(false);
   }
 
   for (const auto &i : complainedReplicas.getAllMsgs()) {
@@ -3145,10 +3146,12 @@ void ReplicaImp::onViewsChangeTimer(Timers::Handle timer)  // TODO(GG): review/u
     const uint64_t diffMilli3 = duration_cast<milliseconds>(currTime - timeOfEarliestPendingRequest).count();
 
     if ((diffMilli1 > viewChangeTimeout) && (diffMilli2 > viewChangeTimeout) && (diffMilli3 > viewChangeTimeout)) {
-      LOG_INFO(
-          VC_LOG,
-          "Ask to leave view=" << curView << " (" << diffMilli3 << " ms after the earliest pending client request)."
-                               << KVLOG(cidOfEarliestPendingRequest, lastViewThatTransferredSeqNumbersFullyExecuted));
+      LOG_INFO(VC_LOG,
+               "Ask to leave view=" << curView << " (" << diffMilli3
+                                    << " ms after the earliest pending client request)."
+                                    << KVLOG(cidOfEarliestPendingRequest,
+                                             lastViewThatTransferredSeqNumbersFullyExecuted,
+                                             lastExecutedSeqNum));
 
       std::unique_ptr<ReplicaAsksToLeaveViewMsg> askToLeaveView(ReplicaAsksToLeaveViewMsg::create(
           config_.getreplicaId(), curView, ReplicaAsksToLeaveViewMsg::Reason::ClientRequestTimeout));
@@ -3286,6 +3289,7 @@ ReplicaImp::ReplicaImp(const LoadedReplicaData &ld,
   if (ld.viewsManager->viewIsActive(lastAgreedView)) {
     curView = lastAgreedView;
   } else {
+    ConcordAssert(false);
     curView = lastAgreedView + 1;
     ViewChangeMsg *t = ld.viewsManager->getMyLatestViewChangeMsg();
     ConcordAssert(t != nullptr);
